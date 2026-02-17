@@ -19,21 +19,18 @@ function parseHeureToMinutes(heure) {
     return parseInt(match[1]) * 60 + parseInt(match[2]);
 }
 
-function formatTimeDiff(minutes) {
-    const h = Math.floor(minutes / 60);
+function minutesToHeure(minutes) {
+    const h = Math.floor(minutes / 60) % 24;
     const m = minutes % 60;
-    if (m === 0) return `+${h}h`;
-    return `+${h}h${m.toString().padStart(2, '0')}`;
+    return `${h}h${m.toString().padStart(2, '0')}`;
 }
 
-function slotTitle(name, slot2, slot1) {
-    if (!slot2.membre || !slot1.membre) return name;
+function slotTitle(name, slot1) {
+    if (!slot1.membre) return name;
     const m1 = parseHeureToMinutes(slot1.heure);
-    const m2 = parseHeureToMinutes(slot2.heure);
-    if (m1 === null || m2 === null) return name;
-    const diff = m2 - m1;
-    if (diff <= 0) return `${name} (${slot2.heure})`;
-    return `${name} (${slot2.heure}) ${formatTimeDiff(diff)}`;
+    if (m1 === null) return name;
+    const nextTime = minutesToHeure(m1 + 120);
+    return `${name} (${nextTime})`;
 }
 
 function buildBraquagesEmbed(data) {
@@ -44,10 +41,10 @@ function buildBraquagesEmbed(data) {
         .addFields(
             { name: 'Superette 1', value: formatSlot(data.sup1), inline: true },
             { name: '\u2800', value: '\u2800', inline: true },
-            { name: slotTitle('Superette 2', data.sup2, data.sup1), value: formatSlot(data.sup2), inline: true },
+            { name: slotTitle('Superette 2', data.sup1), value: formatSlot(data.sup2), inline: true },
             { name: 'Ammu 1', value: formatSlot(data.ammu1), inline: true },
             { name: '\u2800', value: '\u2800', inline: true },
-            { name: slotTitle('Ammu 2', data.ammu2, data.ammu1), value: formatSlot(data.ammu2), inline: true },
+            { name: slotTitle('Ammu 2', data.ammu1), value: formatSlot(data.ammu2), inline: true },
         )
         .setFooter({ text: 'Rappel: 2 par jour max | Reset automatique à 7h' })
         .setTimestamp();
