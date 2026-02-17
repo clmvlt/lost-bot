@@ -1,0 +1,14 @@
+{
+  "name": "lost-bot",
+  "version": "0.0.1",
+  "description": "Bot Discord de gestion de présence pour Lost",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node -r dotenv/config src/index.js dotenv_config_path=.env.dev"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.6.1",
+    "node-cron": "^3.0.3"
+  }
+}

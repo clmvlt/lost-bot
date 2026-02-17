@@ -1,0 +1,251 @@
+{
+  "221692373858648075": {
+    "present": 23,
+    "absent": 3,
+    "noResponse": 0,
+    "late": null
+  },
+  "481573198958428182": {
+    "present": 17,
+    "absent": 4,
+    "noResponse": 0,
+    "late": 5
+  },
+  "951603718393045002": {
+    "present": 20,
+    "absent": 4,
+    "noResponse": 0,
+    "late": null
+  },
+  "432475928401149952": {
+    "present": 18,
+    "absent": 7,
+    "noResponse": 0,
+    "late": 5
+  },
+  "449895826425249802": {
+    "present": 17,
+    "absent": 8,
+    "noResponse": 3
+  },
+  "602186937482215434": {
+    "present": 14,
+    "absent": 24,
+    "noResponse": 0,
+    "late": 2
+  },
+  "306123458331410432": {
+    "present": 3,
+    "absent": 15,
+    "noResponse": 8,
+    "late": null
+  },
+  "283884515531816960": {
+    "present": 26,
+    "absent": 0,
+    "noResponse": 2,
+    "late": 1
+  },
+  "205362069720006657": {
+    "present": 18,
+    "absent": 9,
+    "noResponse": 1,
+    "late": 2
+  },
+  "966806539501461544": {
+    "present": 22,
+    "absent": 5,
+    "noResponse": 0,
+    "late": 1
+  },
+  "688442941462806569": {
+    "present": 22,
+    "absent": 1,
+    "noResponse": 0,
+    "late": null
+  },
+  "1283796652909662259": {
+    "present": 23,
+    "absent": 3,
+    "noResponse": 0,
+    "late": null
+  },
+  "792056794464911361": {
+    "present": 1,
+    "absent": 2,
+    "noResponse": 7
+  },
+  "798854742960242698": {
+    "present": 22,
+    "absent": 4,
+    "noResponse": 0,
+    "late": null
+  },
+  "528266089256189972": {
+    "present": 22,
+    "absent": 1,
+    "noResponse": 0,
+    "late": 2
+  },
+  "728739284806271057": {
+    "present": 26,
+    "absent": 0,
+    "noResponse": 0
+  },
+  "737385604110745742": {
+    "present": 23,
+    "absent": 7,
+    "noResponse": 1,
+    "late": 7
+  },
+  "597972165706645534": {
+    "present": 23,
+    "absent": 2,
+    "noResponse": 0,
+    "late": 3
+  },
+  "943428161809555526": {
+    "present": 24,
+    "absent": 4,
+    "noResponse": 0,
+    "late": null
+  },
+  "1208853837658460171": {
+    "present": 21,
+    "absent": 7,
+    "noResponse": 0,
+    "late": 2
+  },
+  "769499201084063744": {
+    "present": 1,
+    "absent": 6,
+    "noResponse": 16,
+    "late": 2
+  },
+  "148854569508667392": {
+    "present": 16,
+    "absent": 9,
+    "noResponse": 1,
+    "late": 1
+  },
+  "569978809596772373": {
+    "present": 25,
+    "absent": 0,
+    "noResponse": 0,
+    "late": 2
+  },
+  "1062790760858136636": {
+    "present": 14,
+    "absent": 8,
+    "noResponse": 0,
+    "late": 4
+  },
+  "411975881456877568": {
+    "present": 2,
+    "absent": 24,
+    "noResponse": 0,
+    "late": null
+  },
+  "1011777271863988285": {
+    "present": 15,
+    "absent": 11,
+    "noResponse": 0,
+    "late": 4
+  },
+  "412234375736983552": {
+    "present": 0,
+    "absent": 0,
+    "late": 0,
+    "noResponse": 1
+  },
+  "366943696844881920": {
+    "present": 0,
+    "absent": 0,
+    "late": 0,
+    "noResponse": 1
+  },
+  "528741284266115083": {
+    "present": 14,
+    "absent": 1,
+    "late": 13,
+    "noResponse": 2
+  },
+  "1347245185410666618": {
+    "present": 0,
+    "absent": 0,
+    "late": 0,
+    "noResponse": 1
+  },
+  "960686862719156324": {
+    "present": 12,
+    "absent": 4,
+    "late": 1,
+    "noResponse": 0
+  },
+  "772555368319418400": {
+    "present": 13,
+    "absent": 0,
+    "late": 2,
+    "noResponse": 0
+  },
+  "445450768426729474": {
+    "present": 3,
+    "absent": 0,
+    "late": 14,
+    "noResponse": 0
+  },
+  "336954373928255488": {
+    "present": 12,
+    "absent": 2,
+    "late": 8,
+    "noResponse": 0
+  },
+  "689851943706820649": {
+    "present": 3,
+    "absent": 8,
+    "late": 10,
+    "noResponse": 0
+  },
+  "445974389541044224": {
+    "present": 15,
+    "absent": 0,
+    "late": 0,
+    "noResponse": 0
+  },
+  "1460004550734778630": {
+    "present": 1,
+    "absent": 4,
+    "late": 0,
+    "noResponse": 4
+  },
+  "1160222606012719216": {
+    "present": 3,
+    "absent": 2,
+    "late": 6,
+    "noResponse": 1
+  },
+  "334529434868645888": {
+    "present": 2,
+    "absent": 1,
+    "late": 2,
+    "noResponse": 0
+  },
+  "1054452090841350316": {
+    "present": 5,
+    "absent": 1,
+    "late": 2,
+    "noResponse": 0
+  },
+  "448171240801304577": {
+    "present": 0,
+    "absent": 1,
+    "late": 0,
+    "noResponse": 0
+  },
+  "679274562021752852": {
+    "present": 0,
+    "absent": 1,
+    "late": 0,
+    "noResponse": 0
+  }
+}
