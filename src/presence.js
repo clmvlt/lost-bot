@@ -170,79 +170,93 @@ async function handleSendPresence(interaction, client) {
 }
 
 async function handlePresence(interaction) {
-    const data = loadPresence();
-    const presents = data.presents.map(id => `<@${id}>`);
-    const lates = (data.lates || []).map(id => `<@${id}>`);
-    const absents = data.absents.map(id => `<@${id}>`);
-    const noResponses = data.noResponses.map(id => `<@${id}>`);
-
-    const embed = new EmbedBuilder()
-        .setTitle('📋 Liste des présences')
-        .addFields(
-            { name: `✅ Présents (${presents.length})`, value: presents.length > 0 ? presents.join('\n') : 'Aucun', inline: false },
-            { name: `⏰ En retard (${lates.length})`, value: lates.length > 0 ? lates.join('\n') : 'Aucun', inline: false },
-            { name: `❌ Absents (${absents.length})`, value: absents.length > 0 ? absents.join('\n') : 'Aucun', inline: false },
-            { name: `❓ Non répondu (${noResponses.length})`, value: noResponses.length > 0 ? noResponses.join('\n') : 'Aucun', inline: false },
-        )
-        .setColor(0x5865F2)
-        .setTimestamp();
-
-    await interaction.reply({ embeds: [embed] });
-}
-
-async function handleHistory(interaction) {
-    const targetUser = interaction.options.getUser('membre');
-    const history = loadHistory();
-
-    if (targetUser) {
-        const stats = history[targetUser.id] || { ...DEFAULT_USER_HISTORY };
-        const total = stats.present + stats.absent + (stats.late || 0) + stats.noResponse;
-        const presenceRate = total > 0 ? Math.round((stats.present / total) * 100) : 0;
+    try {
+        const data = loadPresence();
+        const presents = data.presents.map(id => `<@${id}>`);
+        const lates = (data.lates || []).map(id => `<@${id}>`);
+        const absents = data.absents.map(id => `<@${id}>`);
+        const noResponses = data.noResponses.map(id => `<@${id}>`);
 
         const embed = new EmbedBuilder()
-            .setTitle(`📊 Historique de ${targetUser.username}`)
-            .setThumbnail(targetUser.displayAvatarURL())
+            .setTitle('📋 Liste des présences')
             .addFields(
-                { name: '✅ Présent', value: `${stats.present}`, inline: true },
-                { name: '⏰ En retard', value: `${stats.late || 0}`, inline: true },
-                { name: '❌ Absent', value: `${stats.absent}`, inline: true },
-                { name: '❓ Non répondu', value: `${stats.noResponse}`, inline: true },
-                { name: '📈 Taux de présence', value: `${presenceRate}%`, inline: false },
+                { name: `✅ Présents (${presents.length})`, value: presents.length > 0 ? presents.join('\n') : 'Aucun', inline: false },
+                { name: `⏰ En retard (${lates.length})`, value: lates.length > 0 ? lates.join('\n') : 'Aucun', inline: false },
+                { name: `❌ Absents (${absents.length})`, value: absents.length > 0 ? absents.join('\n') : 'Aucun', inline: false },
+                { name: `❓ Non répondu (${noResponses.length})`, value: noResponses.length > 0 ? noResponses.join('\n') : 'Aucun', inline: false },
             )
             .setColor(0x5865F2)
             .setTimestamp();
 
         await interaction.reply({ embeds: [embed] });
-        return;
+    } catch (error) {
+        console.error('Erreur /presence:', error);
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: '❌ Erreur lors de l\'affichage des présences.', flags: MessageFlags.Ephemeral }).catch(() => {});
+        }
     }
+}
 
-    const entries = Object.entries(history);
-    if (entries.length === 0) {
-        await interaction.reply({ content: '❌ Aucun historique disponible.', flags: MessageFlags.Ephemeral });
-        return;
+async function handleHistory(interaction) {
+    try {
+        const targetUser = interaction.options.getUser('membre');
+        const history = loadHistory();
+
+        if (targetUser) {
+            const stats = history[targetUser.id] || { ...DEFAULT_USER_HISTORY };
+            const total = stats.present + stats.absent + (stats.late || 0) + stats.noResponse;
+            const presenceRate = total > 0 ? Math.round((stats.present / total) * 100) : 0;
+
+            const embed = new EmbedBuilder()
+                .setTitle(`📊 Historique de ${targetUser.username}`)
+                .setThumbnail(targetUser.displayAvatarURL())
+                .addFields(
+                    { name: '✅ Présent', value: `${stats.present}`, inline: true },
+                    { name: '⏰ En retard', value: `${stats.late || 0}`, inline: true },
+                    { name: '❌ Absent', value: `${stats.absent}`, inline: true },
+                    { name: '❓ Non répondu', value: `${stats.noResponse}`, inline: true },
+                    { name: '📈 Taux de présence', value: `${presenceRate}%`, inline: false },
+                )
+                .setColor(0x5865F2)
+                .setTimestamp();
+
+            await interaction.reply({ embeds: [embed] });
+            return;
+        }
+
+        const entries = Object.entries(history);
+        if (entries.length === 0) {
+            await interaction.reply({ content: '❌ Aucun historique disponible.', flags: MessageFlags.Ephemeral });
+            return;
+        }
+
+        const sorted = entries.map(([userId, stats]) => {
+            const total = stats.present + stats.absent + (stats.late || 0) + stats.noResponse;
+            const rate = total > 0 ? (stats.present / total) * 100 : 0;
+            return { userId, ...stats, late: stats.late || 0, total, rate };
+        }).sort((a, b) => b.rate - a.rate);
+
+        const lines = sorted.map((s, i) =>
+            `${i + 1}. <@${s.userId}> - ✅ ${s.present} | ⏰ ${s.late} | ❌ ${s.absent} | ❓ ${s.noResponse} | **${Math.round(s.rate)}%**`
+        );
+
+        const displayLines = lines.slice(0, 20);
+        if (lines.length > 20) displayLines.push(`... et ${lines.length - 20} autres`);
+
+        const embed = new EmbedBuilder()
+            .setTitle('📊 Historique des présences')
+            .setDescription(displayLines.join('\n'))
+            .setFooter({ text: 'Classé par taux de présence' })
+            .setColor(0x5865F2)
+            .setTimestamp();
+
+        await interaction.reply({ embeds: [embed] });
+    } catch (error) {
+        console.error('Erreur /history:', error);
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: '❌ Erreur lors de l\'affichage de l\'historique.', flags: MessageFlags.Ephemeral }).catch(() => {});
+        }
     }
-
-    const sorted = entries.map(([userId, stats]) => {
-        const total = stats.present + stats.absent + (stats.late || 0) + stats.noResponse;
-        const rate = total > 0 ? (stats.present / total) * 100 : 0;
-        return { userId, ...stats, late: stats.late || 0, total, rate };
-    }).sort((a, b) => b.rate - a.rate);
-
-    const lines = sorted.map((s, i) =>
-        `${i + 1}. <@${s.userId}> - ✅ ${s.present} | ⏰ ${s.late} | ❌ ${s.absent} | ❓ ${s.noResponse} | **${Math.round(s.rate)}%**`
-    );
-
-    const displayLines = lines.slice(0, 20);
-    if (lines.length > 20) displayLines.push(`... et ${lines.length - 20} autres`);
-
-    const embed = new EmbedBuilder()
-        .setTitle('📊 Historique des présences')
-        .setDescription(displayLines.join('\n'))
-        .setFooter({ text: 'Classé par taux de présence' })
-        .setColor(0x5865F2)
-        .setTimestamp();
-
-    await interaction.reply({ embeds: [embed] });
 }
 
 async function handleReset(interaction) {
@@ -279,24 +293,27 @@ const BUTTON_STATUS_MAP = {
 };
 
 async function handleButton(interaction) {
-    const lostRole = interaction.guild.roles.cache.get(config.roles.lost);
-    if (!lostRole || !interaction.member.roles.cache.has(lostRole.id)) {
-        await interaction.reply({ content: '❌ Vous devez avoir le rôle Lost pour répondre.', flags: MessageFlags.Ephemeral });
-        return;
-    }
-
-    const statusRoles = {
-        present: interaction.guild.roles.cache.get(config.roles.present),
-        absent: interaction.guild.roles.cache.get(config.roles.absent),
-        late: interaction.guild.roles.cache.get(config.roles.late),
-        noResponse: interaction.guild.roles.cache.get(config.roles.noResponse),
-    };
-
-    const userId = interaction.user.id;
     const action = BUTTON_STATUS_MAP[interaction.customId];
     if (!action) return;
 
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     try {
+        const lostRole = interaction.guild.roles.cache.get(config.roles.lost);
+        if (!lostRole || !interaction.member.roles.cache.has(lostRole.id)) {
+            await interaction.editReply({ content: '❌ Vous devez avoir le rôle Lost pour répondre.' });
+            return;
+        }
+
+        const statusRoles = {
+            present: interaction.guild.roles.cache.get(config.roles.present),
+            absent: interaction.guild.roles.cache.get(config.roles.absent),
+            late: interaction.guild.roles.cache.get(config.roles.late),
+            noResponse: interaction.guild.roles.cache.get(config.roles.noResponse),
+        };
+
+        const userId = interaction.user.id;
+
         for (const role of Object.values(statusRoles)) {
             if (role) await interaction.member.roles.remove(role).catch(() => {});
         }
@@ -307,11 +324,15 @@ async function handleButton(interaction) {
         updateUserPresence(userId, action.status);
         updateUserHistory(userId, action.status);
 
-        await interaction.reply({ content: action.message, flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ content: action.message });
         await updatePresenceMessage(interaction);
     } catch (error) {
         console.error('Erreur lors du traitement du bouton:', error);
-        await interaction.reply({ content: '❌ Erreur lors de la mise à jour de votre présence.', flags: MessageFlags.Ephemeral });
+        try {
+            await interaction.editReply({ content: '❌ Erreur lors de la mise à jour de votre présence.' });
+        } catch (e) {
+            console.error('Impossible de répondre à l\'interaction bouton:', e);
+        }
     }
 }
 

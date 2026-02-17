@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, MessageFlags } = require('discord.js');
 const config = require('./config');
 const { registerCommands } = require('./commands');
 const { setupCronJobs } = require('./cron');
@@ -43,13 +43,27 @@ client.once('ready', async () => {
 });
 
 client.on('interactionCreate', async (interaction) => {
-    if (interaction.isChatInputCommand()) {
-        const handler = commandHandlers[interaction.commandName];
-        if (handler) await handler(interaction);
-    }
+    try {
+        if (interaction.isChatInputCommand()) {
+            const handler = commandHandlers[interaction.commandName];
+            if (handler) await handler(interaction);
+        }
 
-    if (interaction.isButton()) {
-        await handleButton(interaction);
+        if (interaction.isButton()) {
+            await handleButton(interaction);
+        }
+    } catch (error) {
+        console.error(`Erreur interaction non gérée (${interaction.isButton() ? interaction.customId : interaction.commandName}):`, error);
+        try {
+            const content = '❌ Une erreur est survenue lors du traitement.';
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply({ content });
+            } else {
+                await interaction.reply({ content, flags: MessageFlags.Ephemeral });
+            }
+        } catch (e) {
+            console.error('Impossible de répondre à l\'interaction en erreur:', e);
+        }
     }
 });
 
