@@ -10,5 +10,22 @@
     "discord.js": "^14.14.1",
     "dotenv": "^16.6.1",
     "node-cron": "^3.0.3"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clmvlt/lost-bot.git"
+  },
+  "keywords": [
+    "bot",
+    "discord",
+    "lost",
+    "storylife"
+  ],
+  "author": "dimzou",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/clmvlt/lost-bot/issues"
+  },
+  "homepage": "https://github.com/clmvlt/lost-bot#readme"
 }
