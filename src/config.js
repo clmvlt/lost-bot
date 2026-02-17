@@ -2,6 +2,7 @@ module.exports = {
     token: process.env.DISCORD_TOKEN,
     channelId: process.env.CHANNEL_ID,
     fallbackChannelId: process.env.FALLBACK_CHANNEL_ID,
+    braquagesChannelId: process.env.BRAQUAGES_CHANNEL_ID,
     ownerId: process.env.OWNER_ID,
     roles: {
         lost: process.env.ROLE_LOST,

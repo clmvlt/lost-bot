@@ -1,0 +1,23 @@
+{
+  "sup1": {
+    "date": null,
+    "heure": null,
+    "membre": null
+  },
+  "sup2": {
+    "date": null,
+    "heure": null,
+    "membre": null
+  },
+  "ammu1": {
+    "date": null,
+    "heure": null,
+    "membre": null
+  },
+  "ammu2": {
+    "date": null,
+    "heure": null,
+    "membre": null
+  },
+  "messageId": ""
+}

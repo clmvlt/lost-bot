@@ -8,6 +8,7 @@ const { handleSendPresence, handlePresence, handleHistory, handleReset, handleBu
 const { handleCoupDePression, handleExempleCoupDePression } = require('./coupdepression');
 const { handleArgent, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique } = require('./argent');
 const { handleSetMeAdmin, handleUnsetMeAdmin } = require('./admin');
+const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
 
 const client = new Client({
     intents: [
@@ -32,6 +33,10 @@ const commandHandlers = {
     'argent-historique': handleArgentHistorique,
     setmeadmin: handleSetMeAdmin,
     unsetmeadmin: handleUnsetMeAdmin,
+    sup: (i) => handleSup(i, client),
+    ammu: (i) => handleAmmu(i, client),
+    'braquages-reset': (i) => handleBraquagesReset(i, client),
+    'braquages-clear': (i) => handleBraquagesClear(i, client),
 };
 
 client.once('ready', async () => {
@@ -40,6 +45,7 @@ client.once('ready', async () => {
     client.user.setActivity(isDev ? 'MAINTENANCE POUR DEV' : 'Storylife V7', { type: 0 });
     await registerCommands(client.user.id);
     setupCronJobs(client);
+    await initBraquagesChannel(client);
 });
 
 client.on('interactionCreate', async (interaction) => {
