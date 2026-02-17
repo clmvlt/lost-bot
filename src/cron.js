@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const config = require('./config');
 const { sendPresenceMessage, stripPresenceRoles } = require('./presence');
 const { sendCoupDePression } = require('./coupdepression');
+const { resetBraquagesMessage } = require('./braquages');
 
 const TIMEZONE = 'Europe/Paris';
 
@@ -47,7 +48,20 @@ function setupCronJobs(client) {
         }
     }, { timezone: TIMEZONE });
 
-    console.log('Tâches planifiées: reset à 00h00, présence à 15h00, coups de pression à 19h00');
+    cron.schedule('0 7 * * *', async () => {
+        console.log('Reset du message braquages (7h)');
+        try {
+            const channel = await client.channels.fetch(config.braquagesChannelId);
+            if (channel) {
+                await resetBraquagesMessage(channel);
+                console.log('Message braquages réinitialisé');
+            }
+        } catch (error) {
+            console.error('Erreur lors du reset braquages:', error);
+        }
+    }, { timezone: TIMEZONE });
+
+    console.log('Tâches planifiées: reset à 00h00, braquages à 07h00, présence à 15h00, coups de pression à 19h00');
 }
 
 module.exports = { setupCronJobs };

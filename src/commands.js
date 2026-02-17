@@ -87,6 +87,46 @@ const commands = [
             option.setName('membre')
                 .setDescription('Membre à afficher (optionnel, toi-même si vide)')
                 .setRequired(false)),
+    new SlashCommandBuilder()
+        .setName('sup')
+        .setDescription('Réserver une superette pour aujourd\'hui')
+        .addStringOption(option =>
+            option.setName('with')
+                .setDescription('Membres avec qui tu fais le braquage (@mentions)')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('heure')
+                .setDescription('Heure prévue (ex: 21h30)')
+                .setRequired(false)),
+    new SlashCommandBuilder()
+        .setName('ammu')
+        .setDescription('Réserver une ammu pour aujourd\'hui')
+        .addStringOption(option =>
+            option.setName('with')
+                .setDescription('Membres avec qui tu fais le braquage (@mentions)')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('heure')
+                .setDescription('Heure prévue (ex: 21h30)')
+                .setRequired(false)),
+    new SlashCommandBuilder()
+        .setName('braquages-reset')
+        .setDescription('Réinitialiser le message des braquages')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+    new SlashCommandBuilder()
+        .setName('braquages-clear')
+        .setDescription('Effacer un slot de braquage')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+        .addStringOption(option =>
+            option.setName('slot')
+                .setDescription('Slot à effacer')
+                .setRequired(true)
+                .addChoices(
+                    { name: 'Superette 1', value: 'sup1' },
+                    { name: 'Superette 2', value: 'sup2' },
+                    { name: 'Ammu 1', value: 'ammu1' },
+                    { name: 'Ammu 2', value: 'ammu2' },
+                )),
 ];
 
 async function registerCommands(clientUserId) {
