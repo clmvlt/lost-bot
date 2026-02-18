@@ -10,6 +10,7 @@ const { handleArgent, handleArgentTotal, handleArgentSemaine, handleArgentTop, h
 const { handleSetMeAdmin, handleUnsetMeAdmin, handleSay } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
 const { handleFabrique, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete, handleFabriqueTopPage, handleFabriqueSemainePage } = require('./fabrication');
+const { handleMention } = require('./mentions');
 const { initData } = require('./data');
 
 initData();
@@ -19,6 +20,7 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
     ],
 });
 
@@ -95,5 +97,7 @@ client.on('interactionCreate', async (interaction) => {
         }
     }
 });
+
+client.on('messageCreate', handleMention);
 
 client.login(config.token);
