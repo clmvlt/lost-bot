@@ -2,5 +2,12 @@ node_modules/
 .env
 .env.dev
 config.json
+<<<<<<< HEAD
+=======
+argent.json
+braquages.json
+history.json
+presence.json
+>>>>>>> 3abf203 (removed useless json)
 __pycache__/
 CLAUDE.md
