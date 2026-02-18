@@ -127,6 +127,26 @@ const commands = [
                     { name: 'Ammu 1', value: 'ammu1' },
                     { name: 'Ammu 2', value: 'ammu2' },
                 )),
+    new SlashCommandBuilder()
+        .setName('fabrique')
+        .setDescription('Créer une session de fabrication')
+        .addStringOption(option =>
+            option.setName('participants')
+                .setDescription('Mentionner les participants (@membre1 @membre2 ...)')
+                .setRequired(true)),
+    new SlashCommandBuilder()
+        .setName('fabrique-semaine')
+        .setDescription('Affiche le résumé des sessions de fabrication de la semaine')
+        .addStringOption(option =>
+            option.setName('date')
+                .setDescription('Date dans la semaine voulue (JJ/MM/AAAA), sinon semaine courante')
+                .setRequired(false)),
+    new SlashCommandBuilder()
+        .setName('fabrique-top')
+        .setDescription('Affiche le classement global des sessions de fabrication'),
+    new SlashCommandBuilder()
+        .setName('fabrique-delete')
+        .setDescription('Supprimer la dernière session de fabrication'),
 ];
 
 async function registerCommands(clientUserId) {

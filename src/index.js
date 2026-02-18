@@ -9,6 +9,7 @@ const { handleCoupDePression, handleExempleCoupDePression } = require('./coupdep
 const { handleArgent, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique } = require('./argent');
 const { handleSetMeAdmin, handleUnsetMeAdmin } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
+const { handleFabrique, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete } = require('./fabrication');
 const { initData } = require('./data');
 
 initData();
@@ -40,6 +41,10 @@ const commandHandlers = {
     ammu: (i) => handleAmmu(i, client),
     'braquages-reset': (i) => handleBraquagesReset(i, client),
     'braquages-clear': (i) => handleBraquagesClear(i, client),
+    fabrique: handleFabrique,
+    'fabrique-semaine': handleFabriqueSemaine,
+    'fabrique-top': handleFabriqueTop,
+    'fabrique-delete': handleFabriqueDelete,
 };
 
 client.once('ready', async () => {
