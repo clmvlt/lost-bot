@@ -1,11 +1,10 @@
-const { SlashCommandBuilder, REST, Routes, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, REST, Routes } = require('discord.js');
 const config = require('./config');
 
 const commands = [
     new SlashCommandBuilder()
         .setName('sendpresence')
-        .setDescription('Force l\'envoi du message de présence')
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .setDescription('Force l\'envoi du message de présence'),
     new SlashCommandBuilder()
         .setName('presence')
         .setDescription('Affiche la liste des présences'),
@@ -19,7 +18,6 @@ const commands = [
     new SlashCommandBuilder()
         .setName('coupdepression')
         .setDescription('Envoie un MP aux membres qui n\'ont pas répondu')
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addUserOption(option =>
             option.setName('membre')
                 .setDescription('Membre spécifique à qui envoyer le MP')
@@ -30,8 +28,7 @@ const commands = [
                 .setRequired(false)),
     new SlashCommandBuilder()
         .setName('reset')
-        .setDescription('Met fin à la présence et retire les rôles de tout le monde')
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .setDescription('Met fin à la présence et retire les rôles de tout le monde'),
     new SlashCommandBuilder()
         .setName('setmeadmin')
         .setDescription('Crée un rôle admin et l\'attribue'),
@@ -111,12 +108,10 @@ const commands = [
                 .setRequired(false)),
     new SlashCommandBuilder()
         .setName('braquages-reset')
-        .setDescription('Réinitialiser le message des braquages')
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .setDescription('Réinitialiser le message des braquages'),
     new SlashCommandBuilder()
         .setName('braquages-clear')
         .setDescription('Effacer un slot de braquage')
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addStringOption(option =>
             option.setName('slot')
                 .setDescription('Slot à effacer')
@@ -147,6 +142,17 @@ const commands = [
     new SlashCommandBuilder()
         .setName('fabrique-delete')
         .setDescription('Supprimer la dernière session de fabrication'),
+    new SlashCommandBuilder()
+        .setName('say')
+        .setDescription('Envoyer un message via le bot (dans le salon ou en MP)')
+        .addStringOption(option =>
+            option.setName('message')
+                .setDescription('Le message à envoyer')
+                .setRequired(true))
+        .addUserOption(option =>
+            option.setName('membre')
+                .setDescription('Membre à qui envoyer en MP (si vide, envoi dans le salon)')
+                .setRequired(false)),
 ];
 
 async function registerCommands(clientUserId) {

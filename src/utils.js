@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const { PermissionFlagsBits } = require('discord.js');
+const config = require('./config');
 
 const IMAGES_DIR = path.join(__dirname, '..', 'images');
 
@@ -44,6 +46,10 @@ function hasLostRole(interaction, lostRoleId) {
     return lostRole && interaction.member.roles.cache.has(lostRole.id);
 }
 
+function isAdminOrOwner(interaction) {
+    return interaction.member.permissions.has(PermissionFlagsBits.Administrator) || interaction.user.id === config.ownerId;
+}
+
 module.exports = {
     getRandomImage,
     getWeekBounds,
@@ -51,4 +57,5 @@ module.exports = {
     formatDateFR,
     formatMoney,
     hasLostRole,
+    isAdminOrOwner,
 };
