@@ -9,6 +9,9 @@ const { handleCoupDePression, handleExempleCoupDePression } = require('./coupdep
 const { handleArgent, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique } = require('./argent');
 const { handleSetMeAdmin, handleUnsetMeAdmin } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
+const { initData } = require('./data');
+
+initData();
 
 const client = new Client({
     intents: [

@@ -32,7 +32,23 @@ function saveJSON(filePath, data) {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
+function initData() {
+    const files = [
+        { path: PRESENCE_FILE, defaultValue: DEFAULT_PRESENCE },
+        { path: HISTORY_FILE, defaultValue: {} },
+        { path: ARGENT_FILE, defaultValue: {} },
+        { path: BRAQUAGES_FILE, defaultValue: DEFAULT_BRAQUAGES },
+    ];
+    for (const { path: filePath, defaultValue } of files) {
+        if (!fs.existsSync(filePath)) {
+            saveJSON(filePath, structuredClone(defaultValue));
+            console.log(`${path.basename(filePath)} initialisé.`);
+        }
+    }
+}
+
 module.exports = {
+    initData,
     loadPresence: () => loadJSON(PRESENCE_FILE, DEFAULT_PRESENCE),
     savePresence: (data) => saveJSON(PRESENCE_FILE, data),
     loadHistory: () => loadJSON(HISTORY_FILE, {}),
