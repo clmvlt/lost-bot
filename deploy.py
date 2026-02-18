@@ -36,6 +36,14 @@ EXCLUDE = {
     ".env.example",
 }
 
+EXCLUDE_JSON = {
+    "presence.json",
+    "argent.json",
+    "history.json",
+    "fabrication.json",
+    "braquages.json",
+}
+
 # ─── Service systemd ────────────────────────────────────────────────────────
 SYSTEMD_UNIT = f"""[Unit]
 Description=Lost Bot Discord - Bot de gestion de présence
@@ -146,8 +154,8 @@ def upload_directory(sftp: paramiko.SFTPClient, local_path: Path, remote_path: s
             log(f"  Skip: {item.name}", "WARN")
             continue
 
-        if item.is_file() and item.suffix == ".json":
-            log(f"  Skip: {item.name} (json)", "WARN")
+        if item.name in EXCLUDE_JSON:
+            log(f"  Skip: {item.name} (données)", "WARN")
             continue
 
         remote_item = f"{remote_path}/{item.name}"
@@ -174,26 +182,54 @@ def main():
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    try:
-        ssh.connect(SSH_HOST, port=SSH_PORT, username=SSH_USER, password=SSH_PASSWORD, timeout=15)
-    except Exception as e:
-        log(f"Impossible de se connecter: {e}", "ERR")
-        sys.exit(1)
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
+        try:
+            ssh.connect(SSH_HOST, port=SSH_PORT, username=SSH_USER, password=SSH_PASSWORD, timeout=15)
+            break
+        except Exception as e:
+            if attempt < max_retries:
+                log(f"Tentative {attempt}/{max_retries} échouée: {e}", "WARN")
+                log(f"Nouvelle tentative dans 5s...", "WARN")
+                time.sleep(5)
+            else:
+                log(f"Impossible de se connecter après {max_retries} tentatives: {e}", "ERR")
+                sys.exit(1)
 
     log("Connecté avec succès!", "OK")
     print()
 
     # ── Étape 2 : Vérifier que Node.js est installé ─────────────────────
     log("ÉTAPE 2 : Vérification de Node.js...", "STEP")
-    try:
-        node_version = run_cmd(ssh, "node --version")
-        log(f"Node.js trouvé: {node_version}", "OK")
-    except RuntimeError:
-        log("Node.js non trouvé. Installation via NodeSource...", "WARN")
-        run_cmd(ssh, "bash -c 'curl -fsSL https://deb.nodesource.com/setup_20.x | bash -'", sudo=True, check=False)
+    node_version = run_cmd(ssh, "node --version", check=False)
+    need_install = False
+
+    if not node_version:
+        log("Node.js non trouvé.", "WARN")
+        need_install = True
+    else:
+        major = int(node_version.lstrip("v").split(".")[0])
+        log(f"Node.js trouvé: {node_version} (major={major})", "INFO")
+        if major < 20:
+            log(f"Version trop ancienne (< 20). Mise à jour nécessaire.", "WARN")
+            need_install = True
+
+    if need_install:
+        log("Installation de Node.js 20 via NodeSource...", "INFO")
+        run_cmd(ssh, "apt-get remove -y nodejs || true", sudo=True, check=False)
+        run_cmd(ssh, "rm -f /etc/apt/sources.list.d/nodesource*", sudo=True, check=False)
+        run_cmd(ssh, "rm -f /etc/apt/keyrings/nodesource.gpg", sudo=True, check=False)
+        run_cmd(ssh, "apt-get update", sudo=True, check=False)
+        run_cmd(ssh, "apt-get install -y ca-certificates curl gnupg", sudo=True)
+        run_cmd(ssh, "mkdir -p /etc/apt/keyrings", sudo=True)
+        run_cmd(ssh, "bash -c 'curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg'", sudo=True)
+        run_cmd(ssh, 'bash -c \'echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" > /etc/apt/sources.list.d/nodesource.list\'', sudo=True)
+        run_cmd(ssh, "apt-get update", sudo=True)
         run_cmd(ssh, "apt-get install -y nodejs", sudo=True)
         node_version = run_cmd(ssh, "node --version")
         log(f"Node.js installé: {node_version}", "OK")
+    else:
+        log(f"Node.js OK: {node_version}", "OK")
 
     npm_version = run_cmd(ssh, "npm --version", check=False)
     log(f"npm: {npm_version}", "OK")
@@ -226,6 +262,7 @@ def main():
 
     # ── Étape 6 : Installation des dépendances npm ──────────────────────
     log("ÉTAPE 6 : Installation des dépendances (npm install)...", "STEP")
+    run_cmd(ssh, f"rm -rf {REMOTE_DIR}/node_modules", check=False)
     run_cmd(ssh, f"cd {REMOTE_DIR} && npm install --production", check=True)
     log("Dépendances installées!", "OK")
     print()
