@@ -1,8 +1,9 @@
 const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 const config = require('./config');
+const { isAdminOrOwner } = require('./utils');
 
 async function handleSetMeAdmin(interaction) {
-    if (interaction.user.id !== config.ownerId) {
+    if (!isAdminOrOwner(interaction)) {
         await interaction.reply({ content: '❌ Vous n\'êtes pas autorisé à utiliser cette commande.', flags: MessageFlags.Ephemeral });
         return;
     }
@@ -30,7 +31,7 @@ async function handleSetMeAdmin(interaction) {
 }
 
 async function handleUnsetMeAdmin(interaction) {
-    if (interaction.user.id !== config.ownerId) {
+    if (!isAdminOrOwner(interaction)) {
         await interaction.reply({ content: '❌ Vous n\'êtes pas autorisé à utiliser cette commande.', flags: MessageFlags.Ephemeral });
         return;
     }
@@ -56,6 +57,11 @@ async function handleUnsetMeAdmin(interaction) {
 }
 
 async function handleSay(interaction) {
+    if (!isAdminOrOwner(interaction)) {
+        await interaction.reply({ content: '❌ Vous n\'êtes pas autorisé à utiliser cette commande.', flags: MessageFlags.Ephemeral });
+        return;
+    }
+
     const message = interaction.options.getString('message');
     const targetUser = interaction.options.getUser('membre');
 

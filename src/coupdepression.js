@@ -1,6 +1,7 @@
 const { MessageFlags } = require('discord.js');
 const config = require('./config');
 const { loadPresence } = require('./data');
+const { isAdminOrOwner } = require('./utils');
 
 const PRESSURE_MESSAGES = [
     (time, link) => `🚨 **HEY SALE FDP** 🚨\n\nCommence à répondre à la présence avant que j'enclenche ta pute de mère…\n\n⏰ Il est ${time}, COMMENCE A REPONDRE AVANT DE TE FAIRE KP !${link}`,
@@ -54,6 +55,11 @@ async function sendCoupDePression(guild, isFromCron = false, targetUserId = null
 }
 
 async function handleCoupDePression(interaction, client) {
+    if (!isAdminOrOwner(interaction)) {
+        await interaction.reply({ content: '❌ Vous n\'êtes pas autorisé à utiliser cette commande.', flags: MessageFlags.Ephemeral });
+        return;
+    }
+
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     try {
         const targetMember = interaction.options.getUser('membre');
