@@ -6,10 +6,10 @@ const { registerCommands } = require('./commands');
 const { setupCronJobs } = require('./cron');
 const { handleSendPresence, handlePresence, handleHistory, handleHistoryPage, handleReset, handleButton } = require('./presence');
 const { handleCoupDePression, handleExempleCoupDePression } = require('./coupdepression');
-const { handleArgent, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique } = require('./argent');
+const { handleArgent, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique, handleArgentTopPage, handleArgentSemainePage, handleArgentTopSemainePage } = require('./argent');
 const { handleSetMeAdmin, handleUnsetMeAdmin } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
-const { handleFabrique, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete } = require('./fabrication');
+const { handleFabrique, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete, handleFabriqueTopPage, handleFabriqueSemainePage } = require('./fabrication');
 const { initData } = require('./data');
 
 initData();
@@ -66,6 +66,16 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.isButton()) {
             if (interaction.customId.startsWith('history_page_')) {
                 await handleHistoryPage(interaction);
+            } else if (interaction.customId.startsWith('argent_top_page_')) {
+                await handleArgentTopPage(interaction);
+            } else if (interaction.customId.startsWith('argent_semaine_page_')) {
+                await handleArgentSemainePage(interaction);
+            } else if (interaction.customId.startsWith('argent_topsemaine_page_')) {
+                await handleArgentTopSemainePage(interaction);
+            } else if (interaction.customId.startsWith('fab_top_page_')) {
+                await handleFabriqueTopPage(interaction);
+            } else if (interaction.customId.startsWith('fab_semaine_page_')) {
+                await handleFabriqueSemainePage(interaction);
             } else {
                 await handleButton(interaction);
             }

@@ -1,7 +1,8 @@
-const { EmbedBuilder, MessageFlags } = require('discord.js');
+const { EmbedBuilder, MessageFlags, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('./config');
 const { loadArgent, saveArgent } = require('./data');
 const { getWeekBounds, parseDateFR, formatDateFR, formatMoney, hasLostRole } = require('./utils');
+const { renderRanking, PER_PAGE } = require('./canvas-ranking');
 
 function checkLostRole(interaction) {
     if (!hasLostRole(interaction, config.roles.lost)) {
@@ -131,15 +132,31 @@ async function handleArgentSemaine(interaction) {
     }
 
     const results = buildWeekResults(argentData, start, end);
-    const lines = buildRankingLines(results);
 
-    const embed = new EmbedBuilder()
-        .setTitle('💰 Classement de la semaine')
-        .setDescription(`Du ${startStr} au ${endStr}\n\n${lines.length > 0 ? lines.join('\n') : 'Aucune entrée cette semaine'}`)
-        .setColor(0x5865F2)
-        .setTimestamp();
+    if (results.length === 0) {
+        await interaction.reply({ content: 'Aucune entrée cette semaine.', flags: MessageFlags.Ephemeral });
+        return;
+    }
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.deferReply();
+
+    const sorted = results.map(r => ({
+        userId: r.userId,
+        value: formatMoney(r.total),
+        subtitle: `${r.count} entrée(s)`,
+    }));
+
+    const { buffer, currentPage, totalPages } = await renderRanking(sorted, 0, interaction.guild, interaction.user.id, {
+        title: 'A R G E N T',
+        titleColor: '#57F287',
+        accentColor: '#57F287',
+        footerLabel: `Semaine du ${startStr} au ${endStr}`,
+        subtitle: `Du ${startStr} au ${endStr}`,
+    });
+
+    const file = new AttachmentBuilder(buffer, { name: 'argent-semaine.png' });
+    const row = buildPageButtons('argent_semaine', currentPage, totalPages);
+    await interaction.editReply({ files: [file], components: row ? [row] : [] });
 }
 
 async function handleArgentTop(interaction) {
@@ -152,15 +169,29 @@ async function handleArgentTop(interaction) {
         count: entries.length,
     })).sort((a, b) => b.total - a.total);
 
-    const lines = buildRankingLines(results);
+    if (results.length === 0) {
+        await interaction.reply({ content: 'Aucune entrée enregistrée.', flags: MessageFlags.Ephemeral });
+        return;
+    }
 
-    const embed = new EmbedBuilder()
-        .setTitle('💰 Classement global')
-        .setDescription(lines.length > 0 ? lines.join('\n') : 'Aucune entrée enregistrée')
-        .setColor(0x5865F2)
-        .setTimestamp();
+    await interaction.deferReply();
 
-    await interaction.reply({ embeds: [embed] });
+    const sorted = results.map(r => ({
+        userId: r.userId,
+        value: formatMoney(r.total),
+        subtitle: `${r.count} entrée(s)`,
+    }));
+
+    const { buffer, currentPage, totalPages } = await renderRanking(sorted, 0, interaction.guild, interaction.user.id, {
+        title: 'A R G E N T',
+        titleColor: '#57F287',
+        accentColor: '#57F287',
+        footerLabel: 'Classement global',
+    });
+
+    const file = new AttachmentBuilder(buffer, { name: 'argent-top.png' });
+    const row = buildPageButtons('argent_top', currentPage, totalPages);
+    await interaction.editReply({ files: [file], components: row ? [row] : [] });
 }
 
 async function handleArgentTopSemaine(interaction) {
@@ -175,15 +206,135 @@ async function handleArgentTopSemaine(interaction) {
 
     const argentData = loadArgent();
     const results = buildWeekResults(argentData, start, end);
-    const lines = buildRankingLines(results);
 
-    const embed = new EmbedBuilder()
-        .setTitle('💰 Classement de la semaine')
-        .setDescription(`Du ${startStr} au ${endStr}\n\n${lines.length > 0 ? lines.join('\n') : 'Aucune entrée cette semaine'}`)
-        .setColor(0x5865F2)
-        .setTimestamp();
+    if (results.length === 0) {
+        await interaction.reply({ content: 'Aucune entrée cette semaine.', flags: MessageFlags.Ephemeral });
+        return;
+    }
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.deferReply();
+
+    const sorted = results.map(r => ({
+        userId: r.userId,
+        value: formatMoney(r.total),
+        subtitle: `${r.count} entrée(s)`,
+    }));
+
+    const { buffer, currentPage, totalPages } = await renderRanking(sorted, 0, interaction.guild, interaction.user.id, {
+        title: 'A R G E N T',
+        titleColor: '#57F287',
+        accentColor: '#57F287',
+        footerLabel: `Semaine du ${startStr} au ${endStr}`,
+        subtitle: `Du ${startStr} au ${endStr}`,
+    });
+
+    const file = new AttachmentBuilder(buffer, { name: 'argent-top-semaine.png' });
+    const row = buildPageButtons('argent_topsemaine', currentPage, totalPages);
+    await interaction.editReply({ files: [file], components: row ? [row] : [] });
+}
+
+function buildPageButtons(prefix, currentPage, totalPages) {
+    if (totalPages <= 1) return null;
+    return new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`${prefix}_page_${currentPage - 1}`)
+            .setLabel('Precedent')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(currentPage === 0),
+        new ButtonBuilder()
+            .setCustomId(`${prefix}_page_${currentPage + 1}`)
+            .setLabel('Suivant')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(currentPage >= totalPages - 1),
+    );
+}
+
+function buildArgentTopSorted(argentData) {
+    return Object.entries(argentData).map(([userId, entries]) => ({
+        userId,
+        value: formatMoney(entries.reduce((sum, e) => sum + e.montant, 0)),
+        subtitle: `${entries.length} entrée(s)`,
+        total: entries.reduce((sum, e) => sum + e.montant, 0),
+    })).sort((a, b) => b.total - a.total);
+}
+
+function buildArgentWeekSorted(argentData, start, end) {
+    const results = buildWeekResults(argentData, start, end);
+    return results.map(r => ({
+        userId: r.userId,
+        value: formatMoney(r.total),
+        subtitle: `${r.count} entrée(s)`,
+    }));
+}
+
+async function handleArgentTopPage(interaction) {
+    const page = parseInt(interaction.customId.split('_').pop());
+    await interaction.deferUpdate();
+
+    const argentData = loadArgent();
+    const sorted = buildArgentTopSorted(argentData);
+    if (sorted.length === 0) return;
+
+    const { buffer, currentPage, totalPages } = await renderRanking(sorted, page, interaction.guild, interaction.user.id, {
+        title: 'A R G E N T',
+        titleColor: '#57F287',
+        accentColor: '#57F287',
+        footerLabel: 'Classement global',
+    });
+
+    const file = new AttachmentBuilder(buffer, { name: 'argent-top.png' });
+    const row = buildPageButtons('argent_top', currentPage, totalPages);
+    await interaction.editReply({ files: [file], components: row ? [row] : [], embeds: [], content: null });
+}
+
+async function handleArgentSemainePage(interaction) {
+    const page = parseInt(interaction.customId.split('_').pop());
+    await interaction.deferUpdate();
+
+    const argentData = loadArgent();
+    const refDate = new Date();
+    const { start, end } = getWeekBounds(refDate);
+    const startStr = formatDateFR(start);
+    const endStr = formatDateFR(end);
+    const sorted = buildArgentWeekSorted(argentData, start, end);
+    if (sorted.length === 0) return;
+
+    const { buffer, currentPage, totalPages } = await renderRanking(sorted, page, interaction.guild, interaction.user.id, {
+        title: 'A R G E N T',
+        titleColor: '#57F287',
+        accentColor: '#57F287',
+        footerLabel: `Semaine du ${startStr} au ${endStr}`,
+        subtitle: `Du ${startStr} au ${endStr}`,
+    });
+
+    const file = new AttachmentBuilder(buffer, { name: 'argent-semaine.png' });
+    const row = buildPageButtons('argent_semaine', currentPage, totalPages);
+    await interaction.editReply({ files: [file], components: row ? [row] : [], embeds: [], content: null });
+}
+
+async function handleArgentTopSemainePage(interaction) {
+    const page = parseInt(interaction.customId.split('_').pop());
+    await interaction.deferUpdate();
+
+    const argentData = loadArgent();
+    const refDate = new Date();
+    const { start, end } = getWeekBounds(refDate);
+    const startStr = formatDateFR(start);
+    const endStr = formatDateFR(end);
+    const sorted = buildArgentWeekSorted(argentData, start, end);
+    if (sorted.length === 0) return;
+
+    const { buffer, currentPage, totalPages } = await renderRanking(sorted, page, interaction.guild, interaction.user.id, {
+        title: 'A R G E N T',
+        titleColor: '#57F287',
+        accentColor: '#57F287',
+        footerLabel: `Semaine du ${startStr} au ${endStr}`,
+        subtitle: `Du ${startStr} au ${endStr}`,
+    });
+
+    const file = new AttachmentBuilder(buffer, { name: 'argent-top-semaine.png' });
+    const row = buildPageButtons('argent_topsemaine', currentPage, totalPages);
+    await interaction.editReply({ files: [file], components: row ? [row] : [], embeds: [], content: null });
 }
 
 async function handleArgentHistorique(interaction) {
@@ -223,4 +374,7 @@ module.exports = {
     handleArgentTop,
     handleArgentTopSemaine,
     handleArgentHistorique,
+    handleArgentTopPage,
+    handleArgentSemainePage,
+    handleArgentTopSemainePage,
 };

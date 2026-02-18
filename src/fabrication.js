@@ -1,7 +1,8 @@
-const { EmbedBuilder, MessageFlags } = require('discord.js');
+const { EmbedBuilder, MessageFlags, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('./config');
 const { loadFabrication, saveFabrication } = require('./data');
 const { getWeekBounds, parseDateFR, formatDateFR, hasLostRole } = require('./utils');
+const { renderRanking } = require('./canvas-ranking');
 
 function checkLostRole(interaction) {
     if (!hasLostRole(interaction, config.roles.lost)) {
@@ -64,17 +65,7 @@ async function handleFabrique(interaction) {
     await interaction.reply({ embeds: [embed] });
 }
 
-async function handleFabriqueSemaine(interaction) {
-    if (!checkLostRole(interaction)) return;
-
-    const refDate = parseWeekDate(interaction);
-    if (!refDate) return;
-
-    const { start, end } = getWeekBounds(refDate);
-    const startStr = formatDateFR(start);
-    const endStr = formatDateFR(end);
-
-    const data = loadFabrication();
+function buildWeekCounts(data, start, end) {
     const weekSessions = data.filter(s => {
         const d = new Date(s.date);
         return d >= start && d <= end;
@@ -87,32 +78,16 @@ async function handleFabriqueSemaine(interaction) {
         }
     }
 
-    const ranking = Object.entries(counts)
+    return Object.entries(counts)
         .sort((a, b) => b[1] - a[1])
-        .map(([userId, count], i) => `${i + 1}. <@${userId}> — **${count}** session(s)`);
-
-    const description = [
-        `Du ${startStr} au ${endStr}`,
-        '',
-        `**${weekSessions.length}** session(s) cette semaine`,
-        '',
-        ranking.length > 0 ? ranking.join('\n') : 'Aucun participant cette semaine',
-    ].join('\n');
-
-    const embed = new EmbedBuilder()
-        .setTitle('🧪 Fabrication — Résumé de la semaine')
-        .setDescription(description)
-        .setColor(0x9B59B6)
-        .setTimestamp();
-
-    await interaction.reply({ embeds: [embed] });
+        .map(([userId, count]) => ({
+            userId,
+            value: `${count} session(s)`,
+            count,
+        }));
 }
 
-async function handleFabriqueTop(interaction) {
-    if (!checkLostRole(interaction)) return;
-
-    const data = loadFabrication();
-
+function buildGlobalCounts(data) {
     const counts = {};
     for (const session of data) {
         for (const userId of session.participants) {
@@ -120,19 +95,133 @@ async function handleFabriqueTop(interaction) {
         }
     }
 
-    const ranking = Object.entries(counts)
+    return Object.entries(counts)
         .sort((a, b) => b[1] - a[1])
-        .map(([userId, count], i) => `${i + 1}. <@${userId}> — **${count}** session(s)`);
+        .map(([userId, count]) => ({
+            userId,
+            value: `${count} session(s)`,
+            subtitle: null,
+            count,
+        }));
+}
 
-    const embed = new EmbedBuilder()
-        .setTitle('🧪 Fabrication — Classement global')
-        .setDescription(ranking.length > 0
-            ? `**${data.length}** session(s) au total\n\n${ranking.join('\n')}`
-            : 'Aucune session enregistrée')
-        .setColor(0x9B59B6)
-        .setTimestamp();
+function buildFabPageButtons(prefix, currentPage, totalPages) {
+    if (totalPages <= 1) return null;
+    return new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`${prefix}_page_${currentPage - 1}`)
+            .setLabel('Precedent')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(currentPage === 0),
+        new ButtonBuilder()
+            .setCustomId(`${prefix}_page_${currentPage + 1}`)
+            .setLabel('Suivant')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(currentPage >= totalPages - 1),
+    );
+}
 
-    await interaction.reply({ embeds: [embed] });
+async function handleFabriqueSemaine(interaction) {
+    if (!checkLostRole(interaction)) return;
+
+    const refDate = parseWeekDate(interaction);
+    if (!refDate) return;
+
+    const { start, end } = getWeekBounds(refDate);
+    const startStr = formatDateFR(start);
+    const endStr = formatDateFR(end);
+
+    const data = loadFabrication();
+    const sorted = buildWeekCounts(data, start, end);
+
+    if (sorted.length === 0) {
+        await interaction.reply({ content: 'Aucun participant cette semaine.', flags: MessageFlags.Ephemeral });
+        return;
+    }
+
+    await interaction.deferReply();
+
+    const { buffer, currentPage, totalPages } = await renderRanking(sorted, 0, interaction.guild, interaction.user.id, {
+        title: 'F A B R I C A T I O N',
+        titleColor: '#9B59B6',
+        accentColor: '#9B59B6',
+        footerLabel: `Semaine du ${startStr} au ${endStr}`,
+        subtitle: `Du ${startStr} au ${endStr}`,
+    });
+
+    const file = new AttachmentBuilder(buffer, { name: 'fabrique-semaine.png' });
+    const row = buildFabPageButtons('fab_semaine', currentPage, totalPages);
+    await interaction.editReply({ files: [file], components: row ? [row] : [] });
+}
+
+async function handleFabriqueTop(interaction) {
+    if (!checkLostRole(interaction)) return;
+
+    const data = loadFabrication();
+    const sorted = buildGlobalCounts(data);
+
+    if (sorted.length === 0) {
+        await interaction.reply({ content: 'Aucune session enregistrée.', flags: MessageFlags.Ephemeral });
+        return;
+    }
+
+    await interaction.deferReply();
+
+    const { buffer, currentPage, totalPages } = await renderRanking(sorted, 0, interaction.guild, interaction.user.id, {
+        title: 'F A B R I C A T I O N',
+        titleColor: '#9B59B6',
+        accentColor: '#9B59B6',
+        footerLabel: `${data.length} session(s) au total`,
+    });
+
+    const file = new AttachmentBuilder(buffer, { name: 'fabrique-top.png' });
+    const row = buildFabPageButtons('fab_top', currentPage, totalPages);
+    await interaction.editReply({ files: [file], components: row ? [row] : [] });
+}
+
+async function handleFabriqueTopPage(interaction) {
+    const page = parseInt(interaction.customId.split('_').pop());
+    await interaction.deferUpdate();
+
+    const data = loadFabrication();
+    const sorted = buildGlobalCounts(data);
+    if (sorted.length === 0) return;
+
+    const { buffer, currentPage, totalPages } = await renderRanking(sorted, page, interaction.guild, interaction.user.id, {
+        title: 'F A B R I C A T I O N',
+        titleColor: '#9B59B6',
+        accentColor: '#9B59B6',
+        footerLabel: `${data.length} session(s) au total`,
+    });
+
+    const file = new AttachmentBuilder(buffer, { name: 'fabrique-top.png' });
+    const row = buildFabPageButtons('fab_top', currentPage, totalPages);
+    await interaction.editReply({ files: [file], components: row ? [row] : [], embeds: [], content: null });
+}
+
+async function handleFabriqueSemainePage(interaction) {
+    const page = parseInt(interaction.customId.split('_').pop());
+    await interaction.deferUpdate();
+
+    const data = loadFabrication();
+    const refDate = new Date();
+    const { start, end } = getWeekBounds(refDate);
+    const startStr = formatDateFR(start);
+    const endStr = formatDateFR(end);
+    const sorted = buildWeekCounts(data, start, end);
+    if (sorted.length === 0) return;
+
+    const { buffer, currentPage, totalPages } = await renderRanking(sorted, page, interaction.guild, interaction.user.id, {
+        title: 'F A B R I C A T I O N',
+        titleColor: '#9B59B6',
+        accentColor: '#9B59B6',
+        footerLabel: `Semaine du ${startStr} au ${endStr}`,
+        subtitle: `Du ${startStr} au ${endStr}`,
+    });
+
+    const file = new AttachmentBuilder(buffer, { name: 'fabrique-semaine.png' });
+    const row = buildFabPageButtons('fab_semaine', currentPage, totalPages);
+    await interaction.editReply({ files: [file], components: row ? [row] : [], embeds: [], content: null });
 }
 
 async function handleFabriqueDelete(interaction) {
@@ -168,4 +257,6 @@ module.exports = {
     handleFabriqueSemaine,
     handleFabriqueTop,
     handleFabriqueDelete,
+    handleFabriqueTopPage,
+    handleFabriqueSemainePage,
 };
