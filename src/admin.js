@@ -55,4 +55,25 @@ async function handleUnsetMeAdmin(interaction) {
     }
 }
 
-module.exports = { handleSetMeAdmin, handleUnsetMeAdmin };
+async function handleSay(interaction) {
+    const message = interaction.options.getString('message');
+    const targetUser = interaction.options.getUser('membre');
+
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    try {
+        if (targetUser) {
+            const member = await interaction.guild.members.fetch(targetUser.id);
+            await member.send(message);
+            await interaction.editReply({ content: `✅ Message envoyé en MP à **${targetUser.displayName}**.` });
+        } else {
+            await interaction.channel.send(message);
+            await interaction.editReply({ content: '✅ Message envoyé dans le salon.' });
+        }
+    } catch (error) {
+        console.error('Erreur /say:', error);
+        await interaction.editReply({ content: '❌ Impossible d\'envoyer le message.' });
+    }
+}
+
+module.exports = { handleSetMeAdmin, handleUnsetMeAdmin, handleSay };

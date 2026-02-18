@@ -7,7 +7,7 @@ const { setupCronJobs } = require('./cron');
 const { handleSendPresence, handlePresence, handleHistory, handleHistoryPage, handleReset, handleButton } = require('./presence');
 const { handleCoupDePression, handleExempleCoupDePression } = require('./coupdepression');
 const { handleArgent, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique, handleArgentTopPage, handleArgentSemainePage, handleArgentTopSemainePage } = require('./argent');
-const { handleSetMeAdmin, handleUnsetMeAdmin } = require('./admin');
+const { handleSetMeAdmin, handleUnsetMeAdmin, handleSay } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
 const { handleFabrique, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete, handleFabriqueTopPage, handleFabriqueSemainePage } = require('./fabrication');
 const { initData } = require('./data');
@@ -45,6 +45,7 @@ const commandHandlers = {
     'fabrique-semaine': handleFabriqueSemaine,
     'fabrique-top': handleFabriqueTop,
     'fabrique-delete': handleFabriqueDelete,
+    say: handleSay,
 };
 
 client.once('ready', async () => {
