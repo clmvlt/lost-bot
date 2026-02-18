@@ -14,6 +14,24 @@ function updateUserHistory(userId, status) {
     saveHistory(history);
 }
 
+function decrementUserHistory(userId, status) {
+    const history = loadHistory();
+    if (!history[userId]) return;
+    if (history[userId][status] !== undefined && history[userId][status] > 0) {
+        history[userId][status]--;
+    }
+    saveHistory(history);
+}
+
+function getUserCurrentStatus(userId) {
+    const data = loadPresence();
+    if (data.presents.includes(userId)) return 'present';
+    if (data.absents.includes(userId)) return 'absent';
+    if ((data.lates || []).includes(userId)) return 'late';
+    if (data.noResponses.includes(userId)) return 'noResponse';
+    return null;
+}
+
 function finalizePresenceHistory() {
     const presence = loadPresence();
     for (const userId of presence.noResponses) {
@@ -360,8 +378,14 @@ async function handleButton(interaction) {
         const roleToAdd = statusRoles[action.status];
         if (roleToAdd) await interaction.member.roles.add(roleToAdd);
 
+        const currentStatus = getUserCurrentStatus(userId);
         updateUserPresence(userId, action.status);
-        updateUserHistory(userId, action.status);
+        if (currentStatus !== action.status) {
+            if (currentStatus && currentStatus !== 'noResponse') {
+                decrementUserHistory(userId, currentStatus);
+            }
+            updateUserHistory(userId, action.status);
+        }
 
         await interaction.editReply({ content: action.message });
         await updatePresenceMessage(interaction);
