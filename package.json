@@ -7,11 +7,11 @@
     "start": "node -r dotenv/config src/index.js dotenv_config_path=.env.dev"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^0.1.93",
     "discord.js": "^14.14.1",
     "dotenv": "^16.6.1",
     "node-cron": "^3.0.3"
   },
-  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/clmvlt/lost-bot.git"

@@ -197,25 +197,68 @@ async function handlePresence(interaction) {
     }
 }
 
+const { renderHistory, HISTORY_PER_PAGE } = require('./canvas-history');
+
+function getSortedHistory() {
+    const history = loadHistory();
+    const entries = Object.entries(history);
+    return entries.map(([userId, stats]) => {
+        const total = stats.present + stats.absent + (stats.late || 0) + stats.noResponse;
+        const rate = total > 0 ? (stats.present / total) * 100 : 0;
+        const score = (stats.present * 2) + ((stats.late || 0) * 1) + (stats.absent * -1) + (stats.noResponse * -2);
+        return { userId, ...stats, late: stats.late || 0, total, rate, score };
+    }).sort((a, b) => b.score - a.score || b.rate - a.rate);
+}
+
+function buildPageButtons(currentPage, totalPages) {
+    if (totalPages <= 1) return null;
+    return new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`history_page_${currentPage - 1}`)
+            .setLabel('Precedent')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(currentPage === 0),
+        new ButtonBuilder()
+            .setCustomId(`history_page_${currentPage + 1}`)
+            .setLabel('Suivant')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(currentPage >= totalPages - 1),
+    );
+}
+
+async function handleHistoryPage(interaction) {
+    const page = parseInt(interaction.customId.split('_')[2]);
+    const sorted = getSortedHistory();
+    if (sorted.length === 0) return;
+
+    await interaction.deferUpdate();
+
+    const { buffer, currentPage, totalPages } = await renderHistory(sorted, page, interaction.guild, interaction.user.id);
+    const file = new AttachmentBuilder(buffer, { name: 'history.png' });
+    const row = buildPageButtons(currentPage, totalPages);
+
+    await interaction.editReply({ files: [file], components: row ? [row] : [], embeds: [], content: null });
+}
+
 async function handleHistory(interaction) {
     try {
         const targetUser = interaction.options.getUser('membre');
-        const history = loadHistory();
 
         if (targetUser) {
+            const history = loadHistory();
             const stats = history[targetUser.id] || { ...DEFAULT_USER_HISTORY };
             const total = stats.present + stats.absent + (stats.late || 0) + stats.noResponse;
             const presenceRate = total > 0 ? Math.round((stats.present / total) * 100) : 0;
 
             const embed = new EmbedBuilder()
-                .setTitle(`📊 Historique de ${targetUser.username}`)
+                .setTitle(`Historique de ${targetUser.username}`)
                 .setThumbnail(targetUser.displayAvatarURL())
                 .addFields(
-                    { name: '✅ Présent', value: `${stats.present}`, inline: true },
-                    { name: '⏰ En retard', value: `${stats.late || 0}`, inline: true },
-                    { name: '❌ Absent', value: `${stats.absent}`, inline: true },
-                    { name: '❓ Non répondu', value: `${stats.noResponse}`, inline: true },
-                    { name: '📈 Taux de présence', value: `${presenceRate}%`, inline: false },
+                    { name: 'Present', value: `${stats.present}`, inline: true },
+                    { name: 'En retard', value: `${stats.late || 0}`, inline: true },
+                    { name: 'Absent', value: `${stats.absent}`, inline: true },
+                    { name: 'Non repondu', value: `${stats.noResponse}`, inline: true },
+                    { name: 'Taux de presence', value: `${presenceRate}%`, inline: false },
                 )
                 .setColor(0x5865F2)
                 .setTimestamp();
@@ -224,33 +267,19 @@ async function handleHistory(interaction) {
             return;
         }
 
-        const entries = Object.entries(history);
-        if (entries.length === 0) {
-            await interaction.reply({ content: '❌ Aucun historique disponible.', flags: MessageFlags.Ephemeral });
+        const sorted = getSortedHistory();
+        if (sorted.length === 0) {
+            await interaction.reply({ content: 'Aucun historique disponible.', flags: MessageFlags.Ephemeral });
             return;
         }
 
-        const sorted = entries.map(([userId, stats]) => {
-            const total = stats.present + stats.absent + (stats.late || 0) + stats.noResponse;
-            const rate = total > 0 ? (stats.present / total) * 100 : 0;
-            return { userId, ...stats, late: stats.late || 0, total, rate };
-        }).sort((a, b) => b.rate - a.rate);
+        await interaction.deferReply();
 
-        const lines = sorted.map((s, i) =>
-            `${i + 1}. <@${s.userId}> - ✅ ${s.present} | ⏰ ${s.late} | ❌ ${s.absent} | ❓ ${s.noResponse} | **${Math.round(s.rate)}%**`
-        );
+        const { buffer, currentPage, totalPages } = await renderHistory(sorted, 0, interaction.guild, interaction.user.id);
+        const file = new AttachmentBuilder(buffer, { name: 'history.png' });
+        const row = buildPageButtons(currentPage, totalPages);
 
-        const displayLines = lines.slice(0, 20);
-        if (lines.length > 20) displayLines.push(`... et ${lines.length - 20} autres`);
-
-        const embed = new EmbedBuilder()
-            .setTitle('📊 Historique des présences')
-            .setDescription(displayLines.join('\n'))
-            .setFooter({ text: 'Classé par taux de présence' })
-            .setColor(0x5865F2)
-            .setTimestamp();
-
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ files: [file], components: row ? [row] : [] });
     } catch (error) {
         console.error('Erreur /history:', error);
         if (!interaction.replied && !interaction.deferred) {
@@ -343,6 +372,7 @@ module.exports = {
     handleSendPresence,
     handlePresence,
     handleHistory,
+    handleHistoryPage,
     handleReset,
     handleButton,
 };

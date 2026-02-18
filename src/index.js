@@ -4,7 +4,7 @@ const { Client, GatewayIntentBits, MessageFlags } = require('discord.js');
 const config = require('./config');
 const { registerCommands } = require('./commands');
 const { setupCronJobs } = require('./cron');
-const { handleSendPresence, handlePresence, handleHistory, handleReset, handleButton } = require('./presence');
+const { handleSendPresence, handlePresence, handleHistory, handleHistoryPage, handleReset, handleButton } = require('./presence');
 const { handleCoupDePression, handleExempleCoupDePression } = require('./coupdepression');
 const { handleArgent, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique } = require('./argent');
 const { handleSetMeAdmin, handleUnsetMeAdmin } = require('./admin');
@@ -56,7 +56,11 @@ client.on('interactionCreate', async (interaction) => {
         }
 
         if (interaction.isButton()) {
-            await handleButton(interaction);
+            if (interaction.customId.startsWith('history_page_')) {
+                await handleHistoryPage(interaction);
+            } else {
+                await handleButton(interaction);
+            }
         }
     } catch (error) {
         console.error(`Erreur interaction non gérée (${interaction.isButton() ? interaction.customId : interaction.commandName}):`, error);
