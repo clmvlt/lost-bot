@@ -1,7 +1,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder, MessageFlags } = require('discord.js');
 const config = require('./config');
 const { loadPresence, savePresence, loadHistory, saveHistory, DEFAULT_USER_HISTORY } = require('./data');
-const { getRandomImage } = require('./utils');
+const { getRandomImage, isAdminOrOwner } = require('./utils');
 
 function updateUserHistory(userId, status) {
     const history = loadHistory();
@@ -154,6 +154,11 @@ async function updatePresenceMessage(interaction) {
 }
 
 async function handleSendPresence(interaction, client) {
+    if (!isAdminOrOwner(interaction)) {
+        await interaction.reply({ content: '❌ Vous n\'êtes pas autorisé à utiliser cette commande.', flags: MessageFlags.Ephemeral });
+        return;
+    }
+
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     try {
         const channel = await client.channels.fetch(config.channelId);
@@ -289,6 +294,11 @@ async function handleHistory(interaction) {
 }
 
 async function handleReset(interaction) {
+    if (!isAdminOrOwner(interaction)) {
+        await interaction.reply({ content: '❌ Vous n\'êtes pas autorisé à utiliser cette commande.', flags: MessageFlags.Ephemeral });
+        return;
+    }
+
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     try {
         const guild = interaction.guild;

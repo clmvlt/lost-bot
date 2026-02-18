@@ -147,6 +147,18 @@ const commands = [
     new SlashCommandBuilder()
         .setName('fabrique-delete')
         .setDescription('Supprimer la dernière session de fabrication'),
+    new SlashCommandBuilder()
+        .setName('say')
+        .setDescription('Envoyer un message via le bot (dans le salon ou en MP)')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+        .addStringOption(option =>
+            option.setName('message')
+                .setDescription('Le message à envoyer')
+                .setRequired(true))
+        .addUserOption(option =>
+            option.setName('membre')
+                .setDescription('Membre à qui envoyer en MP (si vide, envoi dans le salon)')
+                .setRequired(false)),
 ];
 
 async function registerCommands(clientUserId) {

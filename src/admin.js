@@ -1,8 +1,9 @@
 const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 const config = require('./config');
+const { isAdminOrOwner } = require('./utils');
 
 async function handleSetMeAdmin(interaction) {
-    if (interaction.user.id !== config.ownerId) {
+    if (!isAdminOrOwner(interaction)) {
         await interaction.reply({ content: '❌ Vous n\'êtes pas autorisé à utiliser cette commande.', flags: MessageFlags.Ephemeral });
         return;
     }
@@ -30,7 +31,7 @@ async function handleSetMeAdmin(interaction) {
 }
 
 async function handleUnsetMeAdmin(interaction) {
-    if (interaction.user.id !== config.ownerId) {
+    if (!isAdminOrOwner(interaction)) {
         await interaction.reply({ content: '❌ Vous n\'êtes pas autorisé à utiliser cette commande.', flags: MessageFlags.Ephemeral });
         return;
     }
@@ -55,4 +56,30 @@ async function handleUnsetMeAdmin(interaction) {
     }
 }
 
-module.exports = { handleSetMeAdmin, handleUnsetMeAdmin };
+async function handleSay(interaction) {
+    if (!isAdminOrOwner(interaction)) {
+        await interaction.reply({ content: '❌ Vous n\'êtes pas autorisé à utiliser cette commande.', flags: MessageFlags.Ephemeral });
+        return;
+    }
+
+    const message = interaction.options.getString('message');
+    const targetUser = interaction.options.getUser('membre');
+
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    try {
+        if (targetUser) {
+            const member = await interaction.guild.members.fetch(targetUser.id);
+            await member.send(message);
+            await interaction.editReply({ content: `✅ Message envoyé en MP à **${targetUser.displayName}**.` });
+        } else {
+            await interaction.channel.send(message);
+            await interaction.editReply({ content: '✅ Message envoyé dans le salon.' });
+        }
+    } catch (error) {
+        console.error('Erreur /say:', error);
+        await interaction.editReply({ content: '❌ Impossible d\'envoyer le message.' });
+    }
+}
+
+module.exports = { handleSetMeAdmin, handleUnsetMeAdmin, handleSay };

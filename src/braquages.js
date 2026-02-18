@@ -1,7 +1,7 @@
 const { MessageFlags, EmbedBuilder } = require('discord.js');
 const config = require('./config');
 const { loadBraquages, saveBraquages, DEFAULT_BRAQUAGES } = require('./data');
-const { formatDateFR } = require('./utils');
+const { formatDateFR, isAdminOrOwner } = require('./utils');
 
 function formatSlot(slot) {
     const pad = '\u2800'.repeat(20);
@@ -180,6 +180,11 @@ async function handleAmmu(interaction, client) {
 }
 
 async function handleBraquagesReset(interaction, client) {
+    if (!isAdminOrOwner(interaction)) {
+        await interaction.reply({ content: '❌ Vous n\'êtes pas autorisé à utiliser cette commande.', flags: MessageFlags.Ephemeral });
+        return;
+    }
+
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
@@ -204,6 +209,11 @@ const SLOT_NAMES = {
 };
 
 async function handleBraquagesClear(interaction, client) {
+    if (!isAdminOrOwner(interaction)) {
+        await interaction.reply({ content: '❌ Vous n\'êtes pas autorisé à utiliser cette commande.', flags: MessageFlags.Ephemeral });
+        return;
+    }
+
     const slot = interaction.options.getString('slot');
 
     const data = loadBraquages();
