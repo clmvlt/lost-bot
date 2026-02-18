@@ -128,7 +128,12 @@ const commands = [
         .addStringOption(option =>
             option.setName('participants')
                 .setDescription('Mentionner les participants (@membre1 @membre2 ...)')
-                .setRequired(true)),
+                .setRequired(true))
+        .addIntegerOption(option =>
+            option.setName('pochons')
+                .setDescription('Nombre de pochons fabriqués')
+                .setRequired(true)
+                .setMinValue(1)),
     new SlashCommandBuilder()
         .setName('fabrique-semaine')
         .setDescription('Affiche le résumé des sessions de fabrication de la semaine')

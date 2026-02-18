@@ -33,6 +33,7 @@ async function handleFabrique(interaction) {
     if (!checkLostRole(interaction)) return;
 
     const participantsStr = interaction.options.getString('participants');
+    const pochons = interaction.options.getInteger('pochons');
     const userIds = parseMentions(participantsStr);
 
     if (userIds.length === 0) {
@@ -44,6 +45,7 @@ async function handleFabrique(interaction) {
         date: new Date().toISOString(),
         participants: userIds,
         createdBy: interaction.user.id,
+        pochons,
     };
 
     const data = loadFabrication();
@@ -56,6 +58,7 @@ async function handleFabrique(interaction) {
         .setTitle('🧪 Session de fabrication')
         .addFields(
             { name: 'Date', value: formatDateFR(session.date, { hour: '2-digit', minute: '2-digit' }), inline: true },
+            { name: 'Pochons', value: `${pochons}`, inline: true },
             { name: 'Participants', value: `${mentionsList} (${userIds.length})`, inline: false },
         )
         .setColor(0x9B59B6)
@@ -73,35 +76,41 @@ function buildWeekCounts(data, start, end) {
 
     const counts = {};
     for (const session of weekSessions) {
+        const sessionPochons = session.pochons || 0;
         for (const userId of session.participants) {
-            counts[userId] = (counts[userId] || 0) + 1;
+            if (!counts[userId]) counts[userId] = { sessions: 0, pochons: 0 };
+            counts[userId].sessions += 1;
+            counts[userId].pochons += sessionPochons;
         }
     }
 
     return Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([userId, count]) => ({
+        .sort((a, b) => b[1].pochons - a[1].pochons || b[1].sessions - a[1].sessions)
+        .map(([userId, { sessions, pochons }]) => ({
             userId,
-            value: `${count} session(s)`,
-            count,
+            value: `${pochons} pochons (${sessions} session${sessions > 1 ? 's' : ''})`,
+            count: pochons,
         }));
 }
 
 function buildGlobalCounts(data) {
     const counts = {};
     for (const session of data) {
+        const sessionPochons = session.pochons || 0;
         for (const userId of session.participants) {
-            counts[userId] = (counts[userId] || 0) + 1;
+            if (!counts[userId]) counts[userId] = { sessions: 0, pochons: 0 };
+            counts[userId].sessions += 1;
+            counts[userId].pochons += sessionPochons;
         }
     }
 
     return Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([userId, count]) => ({
+        .sort((a, b) => b[1].pochons - a[1].pochons || b[1].sessions - a[1].sessions)
+        .map(([userId, { sessions, pochons }]) => ({
             userId,
-            value: `${count} session(s)`,
+            value: `${pochons} pochons (${sessions} session${sessions > 1 ? 's' : ''})`,
             subtitle: null,
-            count,
+            count: pochons,
         }));
 }
 
@@ -167,11 +176,13 @@ async function handleFabriqueTop(interaction) {
 
     await interaction.deferReply();
 
+    const totalPochons = data.reduce((sum, s) => sum + (s.pochons || 0), 0);
+
     const { buffer, currentPage, totalPages } = await renderRanking(sorted, 0, interaction.guild, interaction.user.id, {
         title: 'F A B R I C A T I O N',
         titleColor: '#9B59B6',
         accentColor: '#9B59B6',
-        footerLabel: `${data.length} session(s) au total`,
+        footerLabel: `${totalPochons} pochons — ${data.length} session(s) au total`,
     });
 
     const file = new AttachmentBuilder(buffer, { name: 'fabrique-top.png' });
@@ -187,11 +198,13 @@ async function handleFabriqueTopPage(interaction) {
     const sorted = buildGlobalCounts(data);
     if (sorted.length === 0) return;
 
+    const totalPochons = data.reduce((sum, s) => sum + (s.pochons || 0), 0);
+
     const { buffer, currentPage, totalPages } = await renderRanking(sorted, page, interaction.guild, interaction.user.id, {
         title: 'F A B R I C A T I O N',
         titleColor: '#9B59B6',
         accentColor: '#9B59B6',
-        footerLabel: `${data.length} session(s) au total`,
+        footerLabel: `${totalPochons} pochons — ${data.length} session(s) au total`,
     });
 
     const file = new AttachmentBuilder(buffer, { name: 'fabrique-top.png' });
@@ -243,6 +256,7 @@ async function handleFabriqueDelete(interaction) {
         .setTitle('🗑️ Session supprimée')
         .addFields(
             { name: 'Date', value: formatDateFR(removed.date, { hour: '2-digit', minute: '2-digit' }), inline: true },
+            { name: 'Pochons', value: `${removed.pochons || 0}`, inline: true },
             { name: 'Participants', value: mentionsList, inline: false },
         )
         .setColor(0xED4245)
