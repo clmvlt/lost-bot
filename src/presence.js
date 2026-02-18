@@ -2,6 +2,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBu
 const config = require('./config');
 const { loadPresence, savePresence, loadHistory, saveHistory, DEFAULT_USER_HISTORY } = require('./data');
 const { getRandomImage, isAdminOrOwner } = require('./utils');
+const { refreshCache } = require('./member-cache');
 
 function updateUserHistory(userId, status) {
     const history = loadHistory();
@@ -100,7 +101,7 @@ async function sendPresenceMessage(channel) {
         return null;
     }
 
-    await guild.members.fetch();
+    await refreshCache(guild);
     const lostMembers = lostRole.members;
     const lostMemberIds = [...lostMembers.keys()];
 
