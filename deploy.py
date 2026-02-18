@@ -146,6 +146,10 @@ def upload_directory(sftp: paramiko.SFTPClient, local_path: Path, remote_path: s
             log(f"  Skip: {item.name}", "WARN")
             continue
 
+        if item.is_file() and item.suffix == ".json":
+            log(f"  Skip: {item.name} (json)", "WARN")
+            continue
+
         remote_item = f"{remote_path}/{item.name}"
 
         if item.is_dir():
@@ -229,7 +233,6 @@ def main():
     # ── Étape 7 : Permissions sur les fichiers ───────────────────────────
     log("ÉTAPE 7 : Configuration des permissions...", "STEP")
     run_cmd(ssh, f"chmod -R 755 {REMOTE_DIR}")
-    run_cmd(ssh, f"chmod 644 {REMOTE_DIR}/*.json")
     run_cmd(ssh, f"chmod 644 {REMOTE_DIR}/images/* 2>/dev/null || true", check=False)
     log("Permissions configurées.", "OK")
     print()

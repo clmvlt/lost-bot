@@ -3,6 +3,7 @@ const config = require('./config');
 const { sendPresenceMessage, stripPresenceRoles } = require('./presence');
 const { sendCoupDePression } = require('./coupdepression');
 const { resetBraquagesMessage } = require('./braquages');
+const { refreshCache } = require('./member-cache');
 
 const TIMEZONE = 'Europe/Paris';
 
@@ -61,7 +62,27 @@ function setupCronJobs(client) {
         }
     }, { timezone: TIMEZONE });
 
-    console.log('Tâches planifiées: reset à 00h00, braquages à 07h00, présence à 15h00, coups de pression à 19h00');
+    // Refresh member cache every hour
+    cron.schedule('0 * * * *', async () => {
+        try {
+            const channel = await client.channels.fetch(config.channelId);
+            if (channel) await refreshCache(channel.guild);
+        } catch (error) {
+            console.error('Erreur refresh cache membres:', error);
+        }
+    }, { timezone: TIMEZONE });
+
+    // Initial cache load
+    (async () => {
+        try {
+            const channel = await client.channels.fetch(config.channelId);
+            if (channel) await refreshCache(channel.guild);
+        } catch (error) {
+            console.error('Erreur chargement initial cache membres:', error);
+        }
+    })();
+
+    console.log('Tâches planifiées: reset à 00h00, braquages à 07h00, présence à 15h00, coups de pression à 19h00, cache membres toutes les heures');
 }
 
 module.exports = { setupCronJobs };
