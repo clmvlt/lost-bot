@@ -6,8 +6,8 @@ const { registerCommands } = require('./commands');
 const { setupCronJobs } = require('./cron');
 const { handleSendPresence, handlePresence, handleHistory, handleHistoryPage, handleReset, handleButton } = require('./presence');
 const { handleCoupDePression, handleExempleCoupDePression } = require('./coupdepression');
-<<<<<<< Updated upstream
-const { handleArgent, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique, handleArgentTopPage, handleArgentSemainePage, handleArgentTopSemainePage } = require('./argent');
+const { handleArgent, handleArgentAutocomplete, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique, handleArgentTopPage, handleArgentSemainePage, handleArgentTopSemainePage } = require('./argent');
+const { preloadCache } = require('./sheets');
 const { handleSetMeAdmin, handleUnsetMeAdmin, handleSay } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
 const { handleFabrique, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete, handleFabriqueTopPage, handleFabriqueSemainePage } = require('./fabrication');
@@ -15,12 +15,6 @@ const { handleMention } = require('./mentions');
 const { initData } = require('./data');
 
 initData();
-=======
-const { handleArgent, handleArgentAutocomplete, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique } = require('./argent');
-const { handleSetMeAdmin, handleUnsetMeAdmin } = require('./admin');
-const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
-const { preloadCache } = require('./sheets');
->>>>>>> Stashed changes
 
 const client = new Client({
     intents: [

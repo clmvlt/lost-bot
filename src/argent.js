@@ -2,11 +2,8 @@ const { EmbedBuilder, MessageFlags, AttachmentBuilder, ActionRowBuilder, ButtonB
 const config = require('./config');
 const { loadArgent, saveArgent } = require('./data');
 const { getWeekBounds, parseDateFR, formatDateFR, formatMoney, hasLostRole } = require('./utils');
-<<<<<<< Updated upstream
 const { renderRanking, PER_PAGE } = require('./canvas-ranking');
-=======
 const { getRaisons, getGroupes, addArgentRow } = require('./sheets');
->>>>>>> Stashed changes
 
 function checkLostRole(interaction) {
     if (!hasLostRole(interaction, config.roles.lost)) {
