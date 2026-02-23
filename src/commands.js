@@ -46,9 +46,19 @@ const commands = [
                 .setDescription('Montant (positif = gain, négatif = perte)')
                 .setRequired(true))
         .addStringOption(option =>
-            option.setName('activite')
+            option.setName('raison')
                 .setDescription('Raison / activité du transfert')
-                .setRequired(true)),
+                .setRequired(true)
+                .setAutocomplete(true))
+        .addStringOption(option =>
+            option.setName('groupe')
+                .setDescription('Groupe (par défaut: Lost)')
+                .setRequired(false)
+                .setAutocomplete(true))
+        .addStringOption(option =>
+            option.setName('info')
+                .setDescription('Info supplémentaire')
+                .setRequired(false)),
     new SlashCommandBuilder()
         .setName('argent-total')
         .setDescription('Affiche le total d\'argent d\'un joueur')

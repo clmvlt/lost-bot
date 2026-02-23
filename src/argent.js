@@ -2,7 +2,11 @@ const { EmbedBuilder, MessageFlags, AttachmentBuilder, ActionRowBuilder, ButtonB
 const config = require('./config');
 const { loadArgent, saveArgent } = require('./data');
 const { getWeekBounds, parseDateFR, formatDateFR, formatMoney, hasLostRole } = require('./utils');
+<<<<<<< Updated upstream
 const { renderRanking, PER_PAGE } = require('./canvas-ranking');
+=======
+const { getRaisons, getGroupes, addArgentRow } = require('./sheets');
+>>>>>>> Stashed changes
 
 function checkLostRole(interaction) {
     if (!hasLostRole(interaction, config.roles.lost)) {
@@ -51,26 +55,62 @@ function buildRankingLines(results) {
     );
 }
 
+async function handleArgentAutocomplete(interaction) {
+    try {
+        const focused = interaction.options.getFocused(true);
+
+        let choices = [];
+        if (focused.name === 'raison') {
+            choices = await getRaisons();
+        } else if (focused.name === 'groupe') {
+            choices = await getGroupes();
+        }
+
+        const filtered = choices
+            .filter(c => c.toLowerCase().includes(focused.value.toLowerCase()))
+            .slice(0, 25)
+            .map(c => ({ name: c, value: c }));
+        await interaction.respond(filtered);
+    } catch (error) {
+        console.error('Erreur autocomplete argent:', error.message);
+        await interaction.respond([]);
+    }
+}
+
 async function handleArgent(interaction) {
     if (!checkLostRole(interaction)) return;
 
+    await interaction.deferReply();
+
     const montant = interaction.options.getNumber('montant');
-    const activite = interaction.options.getString('activite');
+    const raison = interaction.options.getString('raison');
+    const groupe = interaction.options.getString('groupe') || 'Lost';
+    const info = interaction.options.getString('info') || '';
     const userId = interaction.user.id;
+    const displayName = interaction.member?.displayName || interaction.user.username;
 
     const argentData = loadArgent();
     if (!argentData[userId]) argentData[userId] = [];
-    argentData[userId].push({ montant, activite, date: new Date().toISOString() });
+    argentData[userId].push({ montant, activite: raison, date: new Date().toISOString() });
     saveArgent(argentData);
 
+    try {
+        await addArgentRow(displayName, raison, montant, groupe, info);
+    } catch (error) {
+        console.error('Erreur ajout Google Sheets:', error.message);
+    }
+
+    const fields = [
+        { name: 'Montant', value: formatMoney(montant), inline: true },
+        { name: 'Activité', value: raison, inline: true },
+    ];
+    if (info) fields.push({ name: 'Info', value: info, inline: true });
+
     const embed = new EmbedBuilder()
-        .addFields(
-            { name: 'Montant', value: formatMoney(montant), inline: true },
-            { name: 'Activité', value: activite, inline: true },
-        )
+        .addFields(fields)
         .setColor(montant >= 0 ? 0x57F287 : 0xED4245);
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
 }
 
 async function handleArgentTotal(interaction) {
@@ -369,6 +409,7 @@ async function handleArgentHistorique(interaction) {
 
 module.exports = {
     handleArgent,
+    handleArgentAutocomplete,
     handleArgentTotal,
     handleArgentSemaine,
     handleArgentTop,

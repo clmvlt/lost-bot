@@ -6,6 +6,7 @@ const { registerCommands } = require('./commands');
 const { setupCronJobs } = require('./cron');
 const { handleSendPresence, handlePresence, handleHistory, handleHistoryPage, handleReset, handleButton } = require('./presence');
 const { handleCoupDePression, handleExempleCoupDePression } = require('./coupdepression');
+<<<<<<< Updated upstream
 const { handleArgent, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique, handleArgentTopPage, handleArgentSemainePage, handleArgentTopSemainePage } = require('./argent');
 const { handleSetMeAdmin, handleUnsetMeAdmin, handleSay } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
@@ -14,6 +15,12 @@ const { handleMention } = require('./mentions');
 const { initData } = require('./data');
 
 initData();
+=======
+const { handleArgent, handleArgentAutocomplete, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique } = require('./argent');
+const { handleSetMeAdmin, handleUnsetMeAdmin } = require('./admin');
+const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
+const { preloadCache } = require('./sheets');
+>>>>>>> Stashed changes
 
 const client = new Client({
     intents: [
@@ -57,10 +64,18 @@ client.once('ready', async () => {
     await registerCommands(client.user.id);
     setupCronJobs(client);
     await initBraquagesChannel(client);
+    preloadCache();
 });
 
 client.on('interactionCreate', async (interaction) => {
     try {
+        if (interaction.isAutocomplete()) {
+            if (interaction.commandName === 'argent') {
+                await handleArgentAutocomplete(interaction);
+            }
+            return;
+        }
+
         if (interaction.isChatInputCommand()) {
             const handler = commandHandlers[interaction.commandName];
             if (handler) await handler(interaction);
