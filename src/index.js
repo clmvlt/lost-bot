@@ -10,7 +10,7 @@ const { handleArgent, handleArgentAutocomplete, handleArgentTotal, handleArgentS
 const { preloadCache } = require('./sheets');
 const { handleSetMeAdmin, handleUnsetMeAdmin, handleSay } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
-const { handleFabrique, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete, handleFabriqueTopPage, handleFabriqueSemainePage } = require('./fabrication');
+const { handleFabrique, handleFabriqueAutocomplete, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete, handleFabriqueTopPage, handleFabriqueSemainePage } = require('./fabrication');
 const { handleMention } = require('./mentions');
 const { initData } = require('./data');
 
@@ -66,6 +66,8 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.isAutocomplete()) {
             if (interaction.commandName === 'argent') {
                 await handleArgentAutocomplete(interaction);
+            } else if (interaction.commandName === 'fabrique') {
+                await handleFabriqueAutocomplete(interaction);
             }
             return;
         }

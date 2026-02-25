@@ -134,16 +134,25 @@ const commands = [
                 )),
     new SlashCommandBuilder()
         .setName('fabrique')
-        .setDescription('Créer une session de fabrication')
+        .setDescription('Enregistrer un ajout/retrait de fabrication')
         .addStringOption(option =>
             option.setName('participants')
                 .setDescription('Mentionner les participants (@membre1 @membre2 ...)')
                 .setRequired(true))
-        .addIntegerOption(option =>
-            option.setName('pochons')
-                .setDescription('Nombre de pochons fabriqués')
+        .addNumberOption(option =>
+            option.setName('montant')
+                .setDescription('Montant (positif = ajout, négatif = retrait)')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('emplacement')
+                .setDescription('Emplacement')
                 .setRequired(true)
-                .setMinValue(1)),
+                .setAutocomplete(true))
+        .addStringOption(option =>
+            option.setName('groupe')
+                .setDescription('Groupe')
+                .setRequired(false)
+                .setAutocomplete(true)),
     new SlashCommandBuilder()
         .setName('fabrique-semaine')
         .setDescription('Affiche le résumé des sessions de fabrication de la semaine')

@@ -39,7 +39,7 @@ function initData() {
         { path: HISTORY_FILE, defaultValue: {} },
         { path: ARGENT_FILE, defaultValue: {} },
         { path: BRAQUAGES_FILE, defaultValue: DEFAULT_BRAQUAGES },
-        { path: FABRICATION_FILE, defaultValue: [] },
+        { path: FABRICATION_FILE, defaultValue: {} },
     ];
     for (const { path: filePath, defaultValue } of files) {
         if (!fs.existsSync(filePath)) {
@@ -59,7 +59,7 @@ module.exports = {
     saveArgent: (data) => saveJSON(ARGENT_FILE, data),
     loadBraquages: () => loadJSON(BRAQUAGES_FILE, DEFAULT_BRAQUAGES),
     saveBraquages: (data) => saveJSON(BRAQUAGES_FILE, data),
-    loadFabrication: () => loadJSON(FABRICATION_FILE, []),
+    loadFabrication: () => loadJSON(FABRICATION_FILE, {}),
     saveFabrication: (data) => saveJSON(FABRICATION_FILE, data),
     DEFAULT_USER_HISTORY,
     DEFAULT_BRAQUAGES,
