@@ -1,9 +1,12 @@
 const { EmbedBuilder, MessageFlags, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('./config');
-const { loadArgent, saveArgent } = require('./data');
+const { loadArgent, saveArgent, loadBraquages, saveBraquages } = require('./data');
 const { getWeekBounds, parseDateFR, formatDateFR, formatMoney, hasLostRole } = require('./utils');
 const { renderRanking, PER_PAGE } = require('./canvas-ranking');
 const { getRaisons, getGroupes, addArgentRow } = require('./sheets');
+const { findAvailableSlot, sendOrUpdateBraquagesMessage } = require('./braquages');
+
+const BRAQUAGE_RAISONS = { 'Superette': 'sup', 'Ammunation': 'ammu' };
 
 function checkLostRole(interaction) {
     if (!hasLostRole(interaction, config.roles.lost)) {
@@ -74,7 +77,7 @@ async function handleArgentAutocomplete(interaction) {
     }
 }
 
-async function handleArgent(interaction) {
+async function handleArgent(interaction, client) {
     if (!checkLostRole(interaction)) return;
 
     await interaction.deferReply();
@@ -102,6 +105,51 @@ async function handleArgent(interaction) {
         { name: 'Activité', value: raison, inline: true },
     ];
     if (info) fields.push({ name: 'Info', value: info, inline: true });
+
+    // Si la raison est Superette ou Ammunation, réserver aussi un slot de braquage
+    const braquageType = BRAQUAGE_RAISONS[raison];
+    if (braquageType) {
+        const withUsers = interaction.options.getString('with');
+        const heure = interaction.options.getString('heure');
+
+        const braquageData = loadBraquages();
+        const slotKey = findAvailableSlot(braquageData, braquageType);
+
+        if (slotKey) {
+            const membres = [userId];
+            if (withUsers) {
+                const mentions = withUsers.match(/<@!?(\d+)>/g) || [];
+                for (const mention of mentions) {
+                    const mentionId = mention.replace(/<@!?(\d+)>/, '$1');
+                    if (!membres.includes(mentionId)) membres.push(mentionId);
+                }
+            }
+
+            const now = new Date();
+            const heureValue = heure || now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
+
+            braquageData[slotKey] = {
+                date: formatDateFR(now),
+                heure: heureValue,
+                membre: membres,
+            };
+            saveBraquages(braquageData);
+
+            try {
+                const channel = await client.channels.fetch(config.braquagesChannelId);
+                if (channel) await sendOrUpdateBraquagesMessage(channel);
+            } catch (error) {
+                console.error('Erreur mise à jour message braquages:', error);
+            }
+
+            const typeName = braquageType === 'sup' ? 'Superette' : 'Ammu';
+            const slotNum = slotKey.slice(-1);
+            fields.push({ name: 'Braquage', value: `✅ ${typeName} ${slotNum} réservée!`, inline: false });
+        } else {
+            const typeName = braquageType === 'sup' ? 'Superette' : 'Ammu';
+            fields.push({ name: 'Braquage', value: `❌ Les 2 ${typeName}s sont déjà réservées!`, inline: false });
+        }
+    }
 
     const embed = new EmbedBuilder()
         .addFields(fields)

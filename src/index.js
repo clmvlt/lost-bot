@@ -32,7 +32,7 @@ const commandHandlers = {
     coupdepression: (i) => handleCoupDePression(i, client),
     exemplecoupdepression: handleExempleCoupDePression,
     reset: handleReset,
-    argent: handleArgent,
+    argent: (i) => handleArgent(i, client),
     'argent-total': handleArgentTotal,
     'argent-semaine': handleArgentSemaine,
     'argent-top': handleArgentTop,

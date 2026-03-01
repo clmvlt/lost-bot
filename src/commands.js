@@ -58,6 +58,14 @@ const commands = [
         .addStringOption(option =>
             option.setName('info')
                 .setDescription('Info supplémentaire')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('with')
+                .setDescription('Membres avec qui tu fais le braquage (@mentions)')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('heure')
+                .setDescription('Heure prévue (ex: 21h30)')
                 .setRequired(false)),
     new SlashCommandBuilder()
         .setName('argent-total')

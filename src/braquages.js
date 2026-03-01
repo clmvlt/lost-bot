@@ -239,6 +239,7 @@ module.exports = {
     sendOrUpdateBraquagesMessage,
     resetBraquagesMessage,
     initBraquagesChannel,
+    findAvailableSlot,
     handleSup,
     handleAmmu,
     handleBraquagesReset,
