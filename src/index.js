@@ -6,10 +6,11 @@ const { registerCommands } = require('./commands');
 const { setupCronJobs } = require('./cron');
 const { handleSendPresence, handlePresence, handleHistory, handleHistoryPage, handleReset, handleButton } = require('./presence');
 const { handleCoupDePression, handleExempleCoupDePression } = require('./coupdepression');
-const { handleArgent, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique, handleArgentTopPage, handleArgentSemainePage, handleArgentTopSemainePage } = require('./argent');
+const { handleArgent, handleArgentAutocomplete, handleArgentTotal, handleArgentSemaine, handleArgentTop, handleArgentTopSemaine, handleArgentHistorique, handleArgentTopPage, handleArgentSemainePage, handleArgentTopSemainePage } = require('./argent');
+const { preloadCache } = require('./sheets');
 const { handleSetMeAdmin, handleUnsetMeAdmin, handleSay } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
-const { handleFabrique, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete, handleFabriqueTopPage, handleFabriqueSemainePage } = require('./fabrication');
+const { handleFabrique, handleFabriqueAutocomplete, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete, handleFabriqueTopPage, handleFabriqueSemainePage } = require('./fabrication');
 const { handleMention } = require('./mentions');
 const { initData } = require('./data');
 
@@ -31,7 +32,7 @@ const commandHandlers = {
     coupdepression: (i) => handleCoupDePression(i, client),
     exemplecoupdepression: handleExempleCoupDePression,
     reset: handleReset,
-    argent: handleArgent,
+    argent: (i) => handleArgent(i, client),
     'argent-total': handleArgentTotal,
     'argent-semaine': handleArgentSemaine,
     'argent-top': handleArgentTop,
@@ -57,10 +58,20 @@ client.once('ready', async () => {
     await registerCommands(client.user.id);
     setupCronJobs(client);
     await initBraquagesChannel(client);
+    preloadCache();
 });
 
 client.on('interactionCreate', async (interaction) => {
     try {
+        if (interaction.isAutocomplete()) {
+            if (interaction.commandName === 'argent') {
+                await handleArgentAutocomplete(interaction);
+            } else if (interaction.commandName === 'fabrique') {
+                await handleFabriqueAutocomplete(interaction);
+            }
+            return;
+        }
+
         if (interaction.isChatInputCommand()) {
             const handler = commandHandlers[interaction.commandName];
             if (handler) await handler(interaction);
