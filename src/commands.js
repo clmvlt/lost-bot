@@ -46,9 +46,27 @@ const commands = [
                 .setDescription('Montant (positif = gain, négatif = perte)')
                 .setRequired(true))
         .addStringOption(option =>
-            option.setName('activite')
+            option.setName('raison')
                 .setDescription('Raison / activité du transfert')
-                .setRequired(true)),
+                .setRequired(true)
+                .setAutocomplete(true))
+        .addStringOption(option =>
+            option.setName('groupe')
+                .setDescription('Groupe (par défaut: Lost)')
+                .setRequired(false)
+                .setAutocomplete(true))
+        .addStringOption(option =>
+            option.setName('info')
+                .setDescription('Info supplémentaire')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('with')
+                .setDescription('Membres avec qui tu fais le braquage (@mentions)')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('heure')
+                .setDescription('Heure prévue (ex: 21h30)')
+                .setRequired(false)),
     new SlashCommandBuilder()
         .setName('argent-total')
         .setDescription('Affiche le total d\'argent d\'un joueur')
@@ -124,16 +142,25 @@ const commands = [
                 )),
     new SlashCommandBuilder()
         .setName('fabrique')
-        .setDescription('Créer une session de fabrication')
+        .setDescription('Enregistrer un ajout/retrait de fabrication')
         .addStringOption(option =>
             option.setName('participants')
                 .setDescription('Mentionner les participants (@membre1 @membre2 ...)')
                 .setRequired(true))
-        .addIntegerOption(option =>
-            option.setName('pochons')
-                .setDescription('Nombre de pochons fabriqués')
+        .addNumberOption(option =>
+            option.setName('montant')
+                .setDescription('Montant (positif = ajout, négatif = retrait)')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('emplacement')
+                .setDescription('Emplacement')
                 .setRequired(true)
-                .setMinValue(1)),
+                .setAutocomplete(true))
+        .addStringOption(option =>
+            option.setName('groupe')
+                .setDescription('Groupe')
+                .setRequired(false)
+                .setAutocomplete(true)),
     new SlashCommandBuilder()
         .setName('fabrique-semaine')
         .setDescription('Affiche le résumé des sessions de fabrication de la semaine')

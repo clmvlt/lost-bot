@@ -1,8 +1,9 @@
 const { EmbedBuilder, MessageFlags, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('./config');
 const { loadFabrication, saveFabrication } = require('./data');
-const { getWeekBounds, parseDateFR, formatDateFR, hasLostRole } = require('./utils');
+const { getWeekBounds, parseDateFR, formatDateFR, formatMoney, hasLostRole } = require('./utils');
 const { renderRanking } = require('./canvas-ranking');
+const { getEmplacements, getGroupes, addFabriqueRow } = require('./sheets');
 
 function checkLostRole(interaction) {
     if (!hasLostRole(interaction, config.roles.lost)) {
@@ -29,11 +30,35 @@ function parseMentions(str) {
     return [...new Set(matches.map(m => m.replace(/<@!?/, '').replace(/>/, '')))];
 }
 
+async function handleFabriqueAutocomplete(interaction) {
+    try {
+        const focused = interaction.options.getFocused(true);
+
+        let choices = [];
+        if (focused.name === 'emplacement') {
+            choices = await getEmplacements();
+        } else if (focused.name === 'groupe') {
+            choices = await getGroupes();
+        }
+
+        const filtered = choices
+            .filter(c => c.toLowerCase().includes(focused.value.toLowerCase()))
+            .slice(0, 25)
+            .map(c => ({ name: c, value: c }));
+        await interaction.respond(filtered);
+    } catch (error) {
+        console.error('Erreur autocomplete fabrique:', error.message);
+        await interaction.respond([]);
+    }
+}
+
 async function handleFabrique(interaction) {
     if (!checkLostRole(interaction)) return;
 
     const participantsStr = interaction.options.getString('participants');
-    const pochons = interaction.options.getInteger('pochons');
+    const montant = interaction.options.getNumber('montant');
+    const emplacement = interaction.options.getString('emplacement');
+    const groupe = interaction.options.getString('groupe') || 'Lost';
     const userIds = parseMentions(participantsStr);
 
     if (userIds.length === 0) {
@@ -41,77 +66,58 @@ async function handleFabrique(interaction) {
         return;
     }
 
-    const session = {
-        date: new Date().toISOString(),
-        participants: userIds,
-        createdBy: interaction.user.id,
-        pochons,
-    };
+    await interaction.deferReply();
 
-    const data = loadFabrication();
-    data.push(session);
-    saveFabrication(data);
+    // Sauvegarde locale par participant
+    const fabData = loadFabrication();
+    for (const userId of userIds) {
+        if (!fabData[userId]) fabData[userId] = [];
+        fabData[userId].push({ montant, emplacement, date: new Date().toISOString() });
+    }
+    saveFabrication(fabData);
+
+    // Une seule ligne Google Sheets avec tous les participants
+    const displayNames = await Promise.all(userIds.map(async (id) => {
+        const member = await interaction.guild.members.fetch(id).catch(() => null);
+        return member?.displayName || id;
+    }));
+
+    try {
+        await addFabriqueRow(displayNames, emplacement, montant, groupe);
+    } catch (error) {
+        console.error('Erreur ajout Google Sheets Fabrication:', error.message);
+    }
 
     const mentionsList = userIds.map(id => `<@${id}>`).join(', ');
 
     const embed = new EmbedBuilder()
         .setTitle('🧪 Session de fabrication')
         .addFields(
-            { name: 'Date', value: formatDateFR(session.date, { hour: '2-digit', minute: '2-digit' }), inline: true },
-            { name: 'Pochons', value: `${pochons}`, inline: true },
+            { name: 'Date', value: formatDateFR(new Date(), { hour: '2-digit', minute: '2-digit' }), inline: true },
+            { name: 'Pochon', value: formatMoney(montant), inline: true },
+            { name: 'Emplacement', value: emplacement, inline: true },
+            { name: 'Groupe', value: groupe, inline: true },
             { name: 'Participants', value: `${mentionsList} (${userIds.length})`, inline: false },
         )
         .setColor(0x9B59B6)
-        .setFooter({ text: `Créée par ${interaction.user.username}` })
         .setTimestamp();
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
 }
 
-function buildWeekCounts(data, start, end) {
-    const weekSessions = data.filter(s => {
-        const d = new Date(s.date);
-        return d >= start && d <= end;
-    });
-
-    const counts = {};
-    for (const session of weekSessions) {
-        const sessionPochons = session.pochons || 0;
-        for (const userId of session.participants) {
-            if (!counts[userId]) counts[userId] = { sessions: 0, pochons: 0 };
-            counts[userId].sessions += 1;
-            counts[userId].pochons += sessionPochons;
+function buildWeekResults(fabData, start, end) {
+    const results = [];
+    for (const [userId, entries] of Object.entries(fabData)) {
+        const weekEntries = entries.filter(e => {
+            const d = new Date(e.date);
+            return d >= start && d <= end;
+        });
+        if (weekEntries.length > 0) {
+            const total = weekEntries.reduce((sum, e) => sum + e.montant, 0);
+            results.push({ userId, total, count: weekEntries.length });
         }
     }
-
-    return Object.entries(counts)
-        .sort((a, b) => b[1].pochons - a[1].pochons || b[1].sessions - a[1].sessions)
-        .map(([userId, { sessions, pochons }]) => ({
-            userId,
-            value: `${pochons} pochons (${sessions} session${sessions > 1 ? 's' : ''})`,
-            count: pochons,
-        }));
-}
-
-function buildGlobalCounts(data) {
-    const counts = {};
-    for (const session of data) {
-        const sessionPochons = session.pochons || 0;
-        for (const userId of session.participants) {
-            if (!counts[userId]) counts[userId] = { sessions: 0, pochons: 0 };
-            counts[userId].sessions += 1;
-            counts[userId].pochons += sessionPochons;
-        }
-    }
-
-    return Object.entries(counts)
-        .sort((a, b) => b[1].pochons - a[1].pochons || b[1].sessions - a[1].sessions)
-        .map(([userId, { sessions, pochons }]) => ({
-            userId,
-            value: `${pochons} pochons (${sessions} session${sessions > 1 ? 's' : ''})`,
-            subtitle: null,
-            count: pochons,
-        }));
+    return results.sort((a, b) => b.total - a.total);
 }
 
 function buildFabPageButtons(prefix, currentPage, totalPages) {
@@ -130,6 +136,24 @@ function buildFabPageButtons(prefix, currentPage, totalPages) {
     );
 }
 
+function buildFabTopSorted(fabData) {
+    return Object.entries(fabData).map(([userId, entries]) => ({
+        userId,
+        value: formatMoney(entries.reduce((sum, e) => sum + e.montant, 0)),
+        subtitle: `${entries.length} entrée(s)`,
+        total: entries.reduce((sum, e) => sum + e.montant, 0),
+    })).sort((a, b) => b.total - a.total);
+}
+
+function buildFabWeekSorted(fabData, start, end) {
+    const results = buildWeekResults(fabData, start, end);
+    return results.map(r => ({
+        userId: r.userId,
+        value: formatMoney(r.total),
+        subtitle: `${r.count} entrée(s)`,
+    }));
+}
+
 async function handleFabriqueSemaine(interaction) {
     if (!checkLostRole(interaction)) return;
 
@@ -140,15 +164,21 @@ async function handleFabriqueSemaine(interaction) {
     const startStr = formatDateFR(start);
     const endStr = formatDateFR(end);
 
-    const data = loadFabrication();
-    const sorted = buildWeekCounts(data, start, end);
+    const fabData = loadFabrication();
+    const results = buildWeekResults(fabData, start, end);
 
-    if (sorted.length === 0) {
-        await interaction.reply({ content: 'Aucun participant cette semaine.', flags: MessageFlags.Ephemeral });
+    if (results.length === 0) {
+        await interaction.reply({ content: 'Aucune entrée cette semaine.', flags: MessageFlags.Ephemeral });
         return;
     }
 
     await interaction.deferReply();
+
+    const sorted = results.map(r => ({
+        userId: r.userId,
+        value: formatMoney(r.total),
+        subtitle: `${r.count} entrée(s)`,
+    }));
 
     const { buffer, currentPage, totalPages } = await renderRanking(sorted, 0, interaction.guild, interaction.user.id, {
         title: 'F A B R I C A T I O N',
@@ -166,23 +196,21 @@ async function handleFabriqueSemaine(interaction) {
 async function handleFabriqueTop(interaction) {
     if (!checkLostRole(interaction)) return;
 
-    const data = loadFabrication();
-    const sorted = buildGlobalCounts(data);
+    const fabData = loadFabrication();
+    const sorted = buildFabTopSorted(fabData);
 
     if (sorted.length === 0) {
-        await interaction.reply({ content: 'Aucune session enregistrée.', flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: 'Aucune entrée enregistrée.', flags: MessageFlags.Ephemeral });
         return;
     }
 
     await interaction.deferReply();
 
-    const totalPochons = data.reduce((sum, s) => sum + (s.pochons || 0), 0);
-
     const { buffer, currentPage, totalPages } = await renderRanking(sorted, 0, interaction.guild, interaction.user.id, {
         title: 'F A B R I C A T I O N',
         titleColor: '#9B59B6',
         accentColor: '#9B59B6',
-        footerLabel: `${totalPochons} pochons — ${data.length} session(s) au total`,
+        footerLabel: 'Classement global',
     });
 
     const file = new AttachmentBuilder(buffer, { name: 'fabrique-top.png' });
@@ -194,17 +222,15 @@ async function handleFabriqueTopPage(interaction) {
     const page = parseInt(interaction.customId.split('_').pop());
     await interaction.deferUpdate();
 
-    const data = loadFabrication();
-    const sorted = buildGlobalCounts(data);
+    const fabData = loadFabrication();
+    const sorted = buildFabTopSorted(fabData);
     if (sorted.length === 0) return;
-
-    const totalPochons = data.reduce((sum, s) => sum + (s.pochons || 0), 0);
 
     const { buffer, currentPage, totalPages } = await renderRanking(sorted, page, interaction.guild, interaction.user.id, {
         title: 'F A B R I C A T I O N',
         titleColor: '#9B59B6',
         accentColor: '#9B59B6',
-        footerLabel: `${totalPochons} pochons — ${data.length} session(s) au total`,
+        footerLabel: 'Classement global',
     });
 
     const file = new AttachmentBuilder(buffer, { name: 'fabrique-top.png' });
@@ -216,12 +242,12 @@ async function handleFabriqueSemainePage(interaction) {
     const page = parseInt(interaction.customId.split('_').pop());
     await interaction.deferUpdate();
 
-    const data = loadFabrication();
+    const fabData = loadFabrication();
     const refDate = new Date();
     const { start, end } = getWeekBounds(refDate);
     const startStr = formatDateFR(start);
     const endStr = formatDateFR(end);
-    const sorted = buildWeekCounts(data, start, end);
+    const sorted = buildFabWeekSorted(fabData, start, end);
     if (sorted.length === 0) return;
 
     const { buffer, currentPage, totalPages } = await renderRanking(sorted, page, interaction.guild, interaction.user.id, {
@@ -240,24 +266,24 @@ async function handleFabriqueSemainePage(interaction) {
 async function handleFabriqueDelete(interaction) {
     if (!checkLostRole(interaction)) return;
 
-    const data = loadFabrication();
+    const userId = interaction.user.id;
+    const fabData = loadFabrication();
+    const entries = fabData[userId];
 
-    if (data.length === 0) {
-        await interaction.reply({ content: '❌ Aucune session de fabrication à supprimer.', flags: MessageFlags.Ephemeral });
+    if (!entries || entries.length === 0) {
+        await interaction.reply({ content: '❌ Aucune entrée de fabrication à supprimer.', flags: MessageFlags.Ephemeral });
         return;
     }
 
-    const removed = data.pop();
-    saveFabrication(data);
-
-    const mentionsList = removed.participants.map(id => `<@${id}>`).join(', ');
+    const removed = entries.pop();
+    saveFabrication(fabData);
 
     const embed = new EmbedBuilder()
-        .setTitle('🗑️ Session supprimée')
+        .setTitle('🗑️ Entrée supprimée')
         .addFields(
             { name: 'Date', value: formatDateFR(removed.date, { hour: '2-digit', minute: '2-digit' }), inline: true },
-            { name: 'Pochons', value: `${removed.pochons || 0}`, inline: true },
-            { name: 'Participants', value: mentionsList, inline: false },
+            { name: 'Montant', value: formatMoney(removed.montant), inline: true },
+            { name: 'Emplacement', value: removed.emplacement, inline: true },
         )
         .setColor(0xED4245)
         .setFooter({ text: `Supprimée par ${interaction.user.username}` })
@@ -268,6 +294,7 @@ async function handleFabriqueDelete(interaction) {
 
 module.exports = {
     handleFabrique,
+    handleFabriqueAutocomplete,
     handleFabriqueSemaine,
     handleFabriqueTop,
     handleFabriqueDelete,

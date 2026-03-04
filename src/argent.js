@@ -1,8 +1,12 @@
 const { EmbedBuilder, MessageFlags, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('./config');
-const { loadArgent, saveArgent } = require('./data');
+const { loadArgent, saveArgent, loadBraquages, saveBraquages } = require('./data');
 const { getWeekBounds, parseDateFR, formatDateFR, formatMoney, hasLostRole } = require('./utils');
 const { renderRanking, PER_PAGE } = require('./canvas-ranking');
+const { getRaisons, getGroupes, addArgentRow } = require('./sheets');
+const { findAvailableSlot, sendOrUpdateBraquagesMessage } = require('./braquages');
+
+const BRAQUAGE_RAISONS = { 'Superette': 'sup', 'Ammunation': 'ammu' };
 
 function checkLostRole(interaction) {
     if (!hasLostRole(interaction, config.roles.lost)) {
@@ -51,26 +55,107 @@ function buildRankingLines(results) {
     );
 }
 
-async function handleArgent(interaction) {
+async function handleArgentAutocomplete(interaction) {
+    try {
+        const focused = interaction.options.getFocused(true);
+
+        let choices = [];
+        if (focused.name === 'raison') {
+            choices = await getRaisons();
+        } else if (focused.name === 'groupe') {
+            choices = await getGroupes();
+        }
+
+        const filtered = choices
+            .filter(c => c.toLowerCase().includes(focused.value.toLowerCase()))
+            .slice(0, 25)
+            .map(c => ({ name: c, value: c }));
+        await interaction.respond(filtered);
+    } catch (error) {
+        console.error('Erreur autocomplete argent:', error.message);
+        await interaction.respond([]);
+    }
+}
+
+async function handleArgent(interaction, client) {
     if (!checkLostRole(interaction)) return;
 
+    await interaction.deferReply();
+
     const montant = interaction.options.getNumber('montant');
-    const activite = interaction.options.getString('activite');
+    const raison = interaction.options.getString('raison');
+    const groupe = interaction.options.getString('groupe') || 'Lost';
+    const info = interaction.options.getString('info') || '';
     const userId = interaction.user.id;
+    const displayName = interaction.member?.displayName || interaction.user.username;
 
     const argentData = loadArgent();
     if (!argentData[userId]) argentData[userId] = [];
-    argentData[userId].push({ montant, activite, date: new Date().toISOString() });
+    argentData[userId].push({ montant, activite: raison, date: new Date().toISOString() });
     saveArgent(argentData);
 
+    try {
+        await addArgentRow(displayName, raison, montant, groupe, info);
+    } catch (error) {
+        console.error('Erreur ajout Google Sheets:', error.message);
+    }
+
+    const fields = [
+        { name: 'Montant', value: formatMoney(montant), inline: true },
+        { name: 'Activité', value: raison, inline: true },
+    ];
+    if (info) fields.push({ name: 'Info', value: info, inline: true });
+
+    // Si la raison est Superette ou Ammunation, réserver aussi un slot de braquage
+    const braquageType = BRAQUAGE_RAISONS[raison];
+    if (braquageType) {
+        const withUsers = interaction.options.getString('with');
+        const heure = interaction.options.getString('heure');
+
+        const braquageData = loadBraquages();
+        const slotKey = findAvailableSlot(braquageData, braquageType);
+
+        if (slotKey) {
+            const membres = [userId];
+            if (withUsers) {
+                const mentions = withUsers.match(/<@!?(\d+)>/g) || [];
+                for (const mention of mentions) {
+                    const mentionId = mention.replace(/<@!?(\d+)>/, '$1');
+                    if (!membres.includes(mentionId)) membres.push(mentionId);
+                }
+            }
+
+            const now = new Date();
+            const heureValue = heure || now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
+
+            braquageData[slotKey] = {
+                date: formatDateFR(now),
+                heure: heureValue,
+                membre: membres,
+            };
+            saveBraquages(braquageData);
+
+            try {
+                const channel = await client.channels.fetch(config.braquagesChannelId);
+                if (channel) await sendOrUpdateBraquagesMessage(channel);
+            } catch (error) {
+                console.error('Erreur mise à jour message braquages:', error);
+            }
+
+            const typeName = braquageType === 'sup' ? 'Superette' : 'Ammu';
+            const slotNum = slotKey.slice(-1);
+            fields.push({ name: 'Braquage', value: `✅ ${typeName} ${slotNum} réservée!`, inline: false });
+        } else {
+            const typeName = braquageType === 'sup' ? 'Superette' : 'Ammu';
+            fields.push({ name: 'Braquage', value: `❌ Les 2 ${typeName}s sont déjà réservées!`, inline: false });
+        }
+    }
+
     const embed = new EmbedBuilder()
-        .addFields(
-            { name: 'Montant', value: formatMoney(montant), inline: true },
-            { name: 'Activité', value: activite, inline: true },
-        )
+        .addFields(fields)
         .setColor(montant >= 0 ? 0x57F287 : 0xED4245);
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
 }
 
 async function handleArgentTotal(interaction) {
@@ -369,6 +454,7 @@ async function handleArgentHistorique(interaction) {
 
 module.exports = {
     handleArgent,
+    handleArgentAutocomplete,
     handleArgentTotal,
     handleArgentSemaine,
     handleArgentTop,
