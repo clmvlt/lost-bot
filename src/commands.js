@@ -47,7 +47,7 @@ const commands = [
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('raison')
-                .setDescription('Raison / activité du transfert')
+                .setDescription('Tapez pour rechercher une raison')
                 .setRequired(true)
                 .setAutocomplete(true))
         .addStringOption(option =>

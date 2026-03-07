@@ -59,6 +59,12 @@ async function handleArgentAutocomplete(interaction) {
     try {
         const focused = interaction.options.getFocused(true);
 
+        if (focused.name === 'raison' && focused.value.length < 2) {
+            return await interaction.respond([
+                { name: '✏️ Écrivez au moins 2 lettres pour voir les raisons', value: '__placeholder__' }
+            ]);
+        }
+
         let choices = [];
         if (focused.name === 'raison') {
             choices = await getRaisons();
