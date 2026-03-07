@@ -80,8 +80,6 @@ async function handleArgentAutocomplete(interaction) {
 async function handleArgent(interaction, client) {
     if (!checkLostRole(interaction)) return;
 
-    await interaction.deferReply();
-
     const montant = interaction.options.getNumber('montant');
     const raison = interaction.options.getString('raison');
     const groupe = interaction.options.getString('groupe') || 'Lost';
@@ -89,14 +87,33 @@ async function handleArgent(interaction, client) {
     const userId = interaction.user.id;
     const displayName = interaction.member?.displayName || interaction.user.username;
 
+    // Validation des champs autocomplete
+    const validRaisons = await getRaisons();
+    if (!validRaisons.some(r => r.toLowerCase() === raison.toLowerCase())) {
+        await interaction.reply({ content: '❌ Raison invalide. Veuillez choisir parmi les suggestions.', flags: MessageFlags.Ephemeral });
+        return;
+    }
+    const groupeInput = interaction.options.getString('groupe');
+    if (groupeInput) {
+        const validGroupes = await getGroupes();
+        if (!validGroupes.some(g => g.toLowerCase() === groupeInput.toLowerCase())) {
+            await interaction.reply({ content: '❌ Groupe invalide. Veuillez choisir parmi les suggestions.', flags: MessageFlags.Ephemeral });
+            return;
+        }
+    }
+
+    await interaction.deferReply();
+
     const argentData = loadArgent();
     if (!argentData[userId]) argentData[userId] = [];
     argentData[userId].push({ montant, activite: raison, date: new Date().toISOString() });
     saveArgent(argentData);
 
+    let sheetsSaved = true;
     try {
         await addArgentRow(displayName, raison, montant, groupe, info);
     } catch (error) {
+        sheetsSaved = false;
         console.error('Erreur ajout Google Sheets:', error.message);
     }
 
@@ -156,6 +173,15 @@ async function handleArgent(interaction, client) {
         .setColor(montant >= 0 ? 0x57F287 : 0xED4245);
 
     await interaction.editReply({ embeds: [embed] });
+
+    if (sheetsSaved) {
+        try {
+            const reply = await interaction.fetchReply();
+            await reply.react('✅');
+        } catch (error) {
+            console.error('Erreur ajout réaction:', error.message);
+        }
+    }
 }
 
 async function handleArgentTotal(interaction) {

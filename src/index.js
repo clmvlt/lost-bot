@@ -44,10 +44,10 @@ const commandHandlers = {
     ammu: (i) => handleAmmu(i, client),
     'braquages-reset': (i) => handleBraquagesReset(i, client),
     'braquages-clear': (i) => handleBraquagesClear(i, client),
-    fabrique: handleFabrique,
-    'fabrique-semaine': handleFabriqueSemaine,
-    'fabrique-top': handleFabriqueTop,
-    'fabrique-delete': handleFabriqueDelete,
+    pochon: handleFabrique,
+    'pochon-semaine': handleFabriqueSemaine,
+    'pochon-top': handleFabriqueTop,
+    'pochon-delete': handleFabriqueDelete,
     say: handleSay,
 };
 
@@ -66,7 +66,7 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.isAutocomplete()) {
             if (interaction.commandName === 'argent') {
                 await handleArgentAutocomplete(interaction);
-            } else if (interaction.commandName === 'fabrique') {
+            } else if (interaction.commandName === 'pochon') {
                 await handleFabriqueAutocomplete(interaction);
             }
             return;

@@ -14,9 +14,9 @@ function formatSlot(slot) {
 
 function parseHeureToMinutes(heure) {
     if (!heure) return null;
-    const match = heure.match(/(\d{1,2})[h:](\d{2})/);
+    const match = heure.match(/(\d{1,2})[h:](\d{2})?/);
     if (!match) return null;
-    return parseInt(match[1]) * 60 + parseInt(match[2]);
+    return parseInt(match[1]) * 60 + parseInt(match[2] || '0');
 }
 
 function minutesToHeure(minutes) {
