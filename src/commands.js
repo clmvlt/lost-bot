@@ -141,8 +141,8 @@ const commands = [
                     { name: 'Ammu 2', value: 'ammu2' },
                 )),
     new SlashCommandBuilder()
-        .setName('fabrique')
-        .setDescription('Enregistrer un ajout/retrait de fabrication')
+        .setName('pochon')
+        .setDescription('Enregistrer un ajout/retrait de pochon')
         .addStringOption(option =>
             option.setName('participants')
                 .setDescription('Mentionner les participants (@membre1 @membre2 ...)')
@@ -162,18 +162,18 @@ const commands = [
                 .setRequired(false)
                 .setAutocomplete(true)),
     new SlashCommandBuilder()
-        .setName('fabrique-semaine')
-        .setDescription('Affiche le résumé des sessions de fabrication de la semaine')
+        .setName('pochon-semaine')
+        .setDescription('Affiche le résumé des sessions de pochon de la semaine')
         .addStringOption(option =>
             option.setName('date')
                 .setDescription('Date dans la semaine voulue (JJ/MM/AAAA), sinon semaine courante')
                 .setRequired(false)),
     new SlashCommandBuilder()
-        .setName('fabrique-top')
-        .setDescription('Affiche le classement global des sessions de fabrication'),
+        .setName('pochon-top')
+        .setDescription('Affiche le classement global des sessions de pochon'),
     new SlashCommandBuilder()
-        .setName('fabrique-delete')
-        .setDescription('Supprimer la dernière session de fabrication'),
+        .setName('pochon-delete')
+        .setDescription('Supprimer la dernière session de pochon'),
     new SlashCommandBuilder()
         .setName('say')
         .setDescription('Envoyer un message via le bot (dans le salon ou en MP)')
