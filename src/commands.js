@@ -141,39 +141,34 @@ const commands = [
                     { name: 'Ammu 2', value: 'ammu2' },
                 )),
     new SlashCommandBuilder()
-        .setName('fabrique')
-        .setDescription('Enregistrer un ajout/retrait de fabrication')
-        .addStringOption(option =>
-            option.setName('participants')
-                .setDescription('Mentionner les participants (@membre1 @membre2 ...)')
-                .setRequired(true))
+        .setName('munitions')
+        .setDescription('Enregistrer un ajout/retrait de munitions depuis un coffre')
         .addNumberOption(option =>
             option.setName('montant')
-                .setDescription('Montant (positif = ajout, négatif = retrait)')
+                .setDescription('Quantité (positif = ajout, négatif = retrait)')
                 .setRequired(true))
         .addStringOption(option =>
-            option.setName('emplacement')
-                .setDescription('Emplacement')
+            option.setName('ammunition')
+                .setDescription('Type d\'ammunition')
+                .setRequired(true)
+                .setAutocomplete(true))
+        .addStringOption(option =>
+            option.setName('coffre')
+                .setDescription('Numéro du coffre')
                 .setRequired(true)
                 .setAutocomplete(true))
         .addStringOption(option =>
             option.setName('groupe')
-                .setDescription('Groupe')
+                .setDescription('Groupe (par défaut: Lost)')
                 .setRequired(false)
-                .setAutocomplete(true)),
-    new SlashCommandBuilder()
-        .setName('fabrique-semaine')
-        .setDescription('Affiche le résumé des sessions de fabrication de la semaine')
+                .setAutocomplete(true))
         .addStringOption(option =>
-            option.setName('date')
-                .setDescription('Date dans la semaine voulue (JJ/MM/AAAA), sinon semaine courante')
+            option.setName('info')
+                .setDescription('Info supplémentaire')
                 .setRequired(false)),
     new SlashCommandBuilder()
-        .setName('fabrique-top')
-        .setDescription('Affiche le classement global des sessions de fabrication'),
-    new SlashCommandBuilder()
-        .setName('fabrique-delete')
-        .setDescription('Supprimer la dernière session de fabrication'),
+        .setName('munitions-reset')
+        .setDescription('Réinitialiser le récap des coffres de munitions'),
     new SlashCommandBuilder()
         .setName('say')
         .setDescription('Envoyer un message via le bot (dans le salon ou en MP)')
