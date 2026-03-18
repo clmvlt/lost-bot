@@ -66,6 +66,21 @@ async function handleFabrique(interaction) {
         return;
     }
 
+    // Validation des champs autocomplete
+    const validEmplacements = await getEmplacements();
+    if (!validEmplacements.some(e => e.toLowerCase() === emplacement.toLowerCase())) {
+        await interaction.reply({ content: '❌ Emplacement invalide. Veuillez choisir parmi les suggestions.', flags: MessageFlags.Ephemeral });
+        return;
+    }
+    const groupeInput = interaction.options.getString('groupe');
+    if (groupeInput) {
+        const validGroupes = await getGroupes();
+        if (!validGroupes.some(g => g.toLowerCase() === groupeInput.toLowerCase())) {
+            await interaction.reply({ content: '❌ Groupe invalide. Veuillez choisir parmi les suggestions.', flags: MessageFlags.Ephemeral });
+            return;
+        }
+    }
+
     await interaction.deferReply();
 
     // Sauvegarde locale par participant
@@ -82,16 +97,18 @@ async function handleFabrique(interaction) {
         return member?.displayName || id;
     }));
 
+    let sheetsSaved = true;
     try {
         await addFabriqueRow(displayNames, emplacement, montant, groupe);
     } catch (error) {
+        sheetsSaved = false;
         console.error('Erreur ajout Google Sheets Fabrication:', error.message);
     }
 
     const mentionsList = userIds.map(id => `<@${id}>`).join(', ');
 
     const embed = new EmbedBuilder()
-        .setTitle('🧪 Session de fabrication')
+        .setTitle('🧪 Session de pochon')
         .addFields(
             { name: 'Date', value: formatDateFR(new Date(), { hour: '2-digit', minute: '2-digit' }), inline: true },
             { name: 'Pochon', value: formatMoney(montant), inline: true },
@@ -103,6 +120,15 @@ async function handleFabrique(interaction) {
         .setTimestamp();
 
     await interaction.editReply({ embeds: [embed] });
+
+    if (sheetsSaved) {
+        try {
+            const reply = await interaction.fetchReply();
+            await reply.react('✅');
+        } catch (error) {
+            console.error('Erreur ajout réaction:', error.message);
+        }
+    }
 }
 
 function buildWeekResults(fabData, start, end) {
@@ -181,7 +207,7 @@ async function handleFabriqueSemaine(interaction) {
     }));
 
     const { buffer, currentPage, totalPages } = await renderRanking(sorted, 0, interaction.guild, interaction.user.id, {
-        title: 'F A B R I C A T I O N',
+        title: 'P O C H O N',
         titleColor: '#9B59B6',
         accentColor: '#9B59B6',
         footerLabel: `Semaine du ${startStr} au ${endStr}`,
@@ -207,7 +233,7 @@ async function handleFabriqueTop(interaction) {
     await interaction.deferReply();
 
     const { buffer, currentPage, totalPages } = await renderRanking(sorted, 0, interaction.guild, interaction.user.id, {
-        title: 'F A B R I C A T I O N',
+        title: 'P O C H O N',
         titleColor: '#9B59B6',
         accentColor: '#9B59B6',
         footerLabel: 'Classement global',
@@ -227,7 +253,7 @@ async function handleFabriqueTopPage(interaction) {
     if (sorted.length === 0) return;
 
     const { buffer, currentPage, totalPages } = await renderRanking(sorted, page, interaction.guild, interaction.user.id, {
-        title: 'F A B R I C A T I O N',
+        title: 'P O C H O N',
         titleColor: '#9B59B6',
         accentColor: '#9B59B6',
         footerLabel: 'Classement global',
@@ -251,7 +277,7 @@ async function handleFabriqueSemainePage(interaction) {
     if (sorted.length === 0) return;
 
     const { buffer, currentPage, totalPages } = await renderRanking(sorted, page, interaction.guild, interaction.user.id, {
-        title: 'F A B R I C A T I O N',
+        title: 'P O C H O N',
         titleColor: '#9B59B6',
         accentColor: '#9B59B6',
         footerLabel: `Semaine du ${startStr} au ${endStr}`,
