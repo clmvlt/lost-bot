@@ -10,7 +10,7 @@ const { handleArgent, handleArgentAutocomplete, handleArgentTotal, handleArgentS
 const { preloadCache } = require('./sheets');
 const { handleSetMeAdmin, handleUnsetMeAdmin, handleSay } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
-const { handleFabrique, handleFabriqueAutocomplete, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete, handleFabriqueTopPage, handleFabriqueSemainePage } = require('./fabrication');
+const { handleMunitions, handleMunitionsAutocomplete, handleMunitionsReset, initMunitionsChannel } = require('./munitions');
 const { handleMention } = require('./mentions');
 const { initData } = require('./data');
 
@@ -44,10 +44,8 @@ const commandHandlers = {
     ammu: (i) => handleAmmu(i, client),
     'braquages-reset': (i) => handleBraquagesReset(i, client),
     'braquages-clear': (i) => handleBraquagesClear(i, client),
-    pochon: handleFabrique,
-    'pochon-semaine': handleFabriqueSemaine,
-    'pochon-top': handleFabriqueTop,
-    'pochon-delete': handleFabriqueDelete,
+    munitions: (i) => handleMunitions(i, client),
+    'munitions-reset': (i) => handleMunitionsReset(i, client),
     say: handleSay,
 };
 
@@ -58,6 +56,7 @@ client.once('ready', async () => {
     await registerCommands(client.user.id);
     setupCronJobs(client);
     await initBraquagesChannel(client);
+    await initMunitionsChannel(client);
     preloadCache();
 });
 
@@ -66,8 +65,8 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.isAutocomplete()) {
             if (interaction.commandName === 'argent') {
                 await handleArgentAutocomplete(interaction);
-            } else if (interaction.commandName === 'pochon') {
-                await handleFabriqueAutocomplete(interaction);
+            } else if (interaction.commandName === 'munitions') {
+                await handleMunitionsAutocomplete(interaction);
             }
             return;
         }
@@ -86,10 +85,6 @@ client.on('interactionCreate', async (interaction) => {
                 await handleArgentSemainePage(interaction);
             } else if (interaction.customId.startsWith('argent_topsemaine_page_')) {
                 await handleArgentTopSemainePage(interaction);
-            } else if (interaction.customId.startsWith('fab_top_page_')) {
-                await handleFabriqueTopPage(interaction);
-            } else if (interaction.customId.startsWith('fab_semaine_page_')) {
-                await handleFabriqueSemainePage(interaction);
             } else {
                 await handleButton(interaction);
             }

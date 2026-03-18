@@ -3,6 +3,7 @@ const config = require('./config');
 const { sendPresenceMessage, stripPresenceRoles } = require('./presence');
 const { sendCoupDePression } = require('./coupdepression');
 const { resetBraquagesMessage } = require('./braquages');
+const { resetMunitionsMessage } = require('./munitions');
 const { refreshCache } = require('./member-cache');
 
 const TIMEZONE = 'Europe/Paris';
@@ -60,6 +61,17 @@ function setupCronJobs(client) {
         } catch (error) {
             console.error('Erreur lors du reset braquages:', error);
         }
+
+        console.log('Reset du message munitions (7h)');
+        try {
+            const channel = await client.channels.fetch(config.munitionsChannelId);
+            if (channel) {
+                await resetMunitionsMessage(channel);
+                console.log('Message munitions réinitialisé');
+            }
+        } catch (error) {
+            console.error('Erreur lors du reset munitions:', error);
+        }
     }, { timezone: TIMEZONE });
 
     // Refresh member cache every hour
@@ -82,7 +94,7 @@ function setupCronJobs(client) {
         }
     })();
 
-    console.log('Tâches planifiées: reset à 00h00, braquages à 07h00, présence à 15h00, coups de pression à 19h00, cache membres toutes les heures');
+    console.log('Tâches planifiées: reset à 00h00, braquages+munitions à 07h00, présence à 15h00, coups de pression à 19h00, cache membres toutes les heures');
 }
 
 module.exports = { setupCronJobs };
