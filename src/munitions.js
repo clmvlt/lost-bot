@@ -163,6 +163,15 @@ async function handleMunitions(interaction, client) {
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
+    // Valider le type de munition
+    if (ammunition) {
+        const validAmmunitions = await getAmmunitions();
+        if (!validAmmunitions.includes(ammunition)) {
+            await interaction.editReply({ content: `❌ **${ammunition}** n'est pas un type de munition valide. Veuillez sélectionner une option depuis la liste.` });
+            return;
+        }
+    }
+
     // Mettre à jour le recap (ajout uniquement)
     let updateEmbed = false;
 
@@ -225,13 +234,39 @@ async function handleMunitionsReset(interaction, client) {
         return;
     }
 
+    const coffreOption = interaction.options.getString('coffre');
+
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
+        // Valider que le coffre existe si spécifié
+        if (coffreOption) {
+            const coffresList = await getCoffres();
+            if (!coffresList.includes(coffreOption)) {
+                await interaction.editReply({ content: `❌ Le coffre **${coffreOption}** n'existe pas. Veuillez sélectionner un coffre depuis la liste.` });
+                return;
+            }
+
+            // Reset d'un seul coffre
+            const data = loadMunitions();
+            data.coffres[coffreOption] = null;
+            saveMunitions(data);
+
+            const channel = await client.channels.fetch(config.munitionsChannelId);
+            if (channel) {
+                await sendOrUpdateMunitionsMessage(channel);
+                await interaction.editReply({ content: `✅ Coffre **${coffreOption}** réinitialisé !` });
+            } else {
+                await interaction.editReply({ content: '❌ Salon munitions introuvable!' });
+            }
+            return;
+        }
+
+        // Reset de tous les coffres
         const channel = await client.channels.fetch(config.munitionsChannelId);
         if (channel) {
             await resetMunitionsMessage(channel);
-            await interaction.editReply({ content: '✅ Coffres de munitions réinitialisés!' });
+            await interaction.editReply({ content: '✅ Tous les coffres de munitions réinitialisés !' });
         } else {
             await interaction.editReply({ content: '❌ Salon munitions introuvable!' });
         }

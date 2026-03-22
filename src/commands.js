@@ -168,7 +168,12 @@ const commands = [
                 .setRequired(false)),
     new SlashCommandBuilder()
         .setName('munitions-reset')
-        .setDescription('Réinitialiser le récap des coffres de munitions'),
+        .setDescription('Réinitialiser le récap des coffres de munitions')
+        .addStringOption(option =>
+            option.setName('coffre')
+                .setDescription('Coffre spécifique à réinitialiser (tous si non spécifié)')
+                .setRequired(false)
+                .setAutocomplete(true)),
     new SlashCommandBuilder()
         .setName('say')
         .setDescription('Envoyer un message via le bot (dans le salon ou en MP)')
