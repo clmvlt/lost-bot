@@ -65,7 +65,7 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.isAutocomplete()) {
             if (interaction.commandName === 'argent') {
                 await handleArgentAutocomplete(interaction);
-            } else if (interaction.commandName === 'munitions') {
+            } else if (interaction.commandName === 'munitions' || interaction.commandName === 'munitions-reset') {
                 await handleMunitionsAutocomplete(interaction);
             }
             return;
