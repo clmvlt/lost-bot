@@ -10,6 +10,7 @@ const { handleArgent, handleArgentAutocomplete, handleArgentTotal, handleArgentS
 const { preloadCache } = require('./sheets');
 const { handleSetMeAdmin, handleUnsetMeAdmin, handleSay } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
+const { handleCambriolage, handleCambriolageSemaine } = require('./cambriolage');
 const { handleMunitions, handleMunitionsAutocomplete, handleMunitionsReset, initMunitionsChannel } = require('./munitions');
 const { handleMention } = require('./mentions');
 const { initData } = require('./data');
@@ -44,6 +45,8 @@ const commandHandlers = {
     ammu: (i) => handleAmmu(i, client),
     'braquages-reset': (i) => handleBraquagesReset(i, client),
     'braquages-clear': (i) => handleBraquagesClear(i, client),
+    cambriolage: handleCambriolage,
+    'cambriolage-semaine': handleCambriolageSemaine,
     munitions: (i) => handleMunitions(i, client),
     'munitions-reset': (i) => handleMunitionsReset(i, client),
     say: handleSay,
