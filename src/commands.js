@@ -141,39 +141,39 @@ const commands = [
                     { name: 'Ammu 2', value: 'ammu2' },
                 )),
     new SlashCommandBuilder()
-        .setName('pochon')
-        .setDescription('Enregistrer un ajout/retrait de pochon')
-        .addStringOption(option =>
-            option.setName('participants')
-                .setDescription('Mentionner les participants (@membre1 @membre2 ...)')
-                .setRequired(true))
+        .setName('munitions')
+        .setDescription('Enregistrer un ajout/retrait de munitions depuis un coffre')
         .addNumberOption(option =>
             option.setName('montant')
-                .setDescription('Montant (positif = ajout, négatif = retrait)')
+                .setDescription('Quantité (positif = ajout, négatif = retrait)')
                 .setRequired(true))
         .addStringOption(option =>
-            option.setName('emplacement')
-                .setDescription('Emplacement')
+            option.setName('ammunition')
+                .setDescription('Type d\'ammunition')
+                .setRequired(true)
+                .setAutocomplete(true))
+        .addStringOption(option =>
+            option.setName('coffre')
+                .setDescription('Numéro du coffre')
                 .setRequired(true)
                 .setAutocomplete(true))
         .addStringOption(option =>
             option.setName('groupe')
-                .setDescription('Groupe')
+                .setDescription('Groupe (par défaut: Lost)')
                 .setRequired(false)
-                .setAutocomplete(true)),
-    new SlashCommandBuilder()
-        .setName('pochon-semaine')
-        .setDescription('Affiche le résumé des sessions de pochon de la semaine')
+                .setAutocomplete(true))
         .addStringOption(option =>
-            option.setName('date')
-                .setDescription('Date dans la semaine voulue (JJ/MM/AAAA), sinon semaine courante')
+            option.setName('info')
+                .setDescription('Info supplémentaire')
                 .setRequired(false)),
     new SlashCommandBuilder()
-        .setName('pochon-top')
-        .setDescription('Affiche le classement global des sessions de pochon'),
-    new SlashCommandBuilder()
-        .setName('pochon-delete')
-        .setDescription('Supprimer la dernière session de pochon'),
+        .setName('munitions-reset')
+        .setDescription('Réinitialiser le récap des coffres de munitions')
+        .addStringOption(option =>
+            option.setName('coffre')
+                .setDescription('Coffre spécifique à réinitialiser (tous si non spécifié)')
+                .setRequired(false)
+                .setAutocomplete(true)),
     new SlashCommandBuilder()
         .setName('cambriolage')
         .setDescription('Enregistrer un cambriolage')

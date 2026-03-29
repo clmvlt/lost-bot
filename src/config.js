@@ -3,6 +3,7 @@ module.exports = {
     channelId: process.env.CHANNEL_ID,
     fallbackChannelId: process.env.FALLBACK_CHANNEL_ID,
     braquagesChannelId: process.env.BRAQUAGES_CHANNEL_ID,
+    munitionsChannelId: process.env.MUNITIONS_CHANNEL_ID,
     ownerId: process.env.OWNER_ID,
     googleSheetsId: process.env.GOOGLE_SHEETS_ID,
     googleServiceAccountKey: process.env.GOOGLE_SERVICE_ACCOUNT_KEY,

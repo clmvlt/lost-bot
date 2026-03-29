@@ -12,6 +12,7 @@ const { handleSetMeAdmin, handleUnsetMeAdmin, handleSay } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
 const { handleFabrique, handleFabriqueAutocomplete, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete, handleFabriqueTopPage, handleFabriqueSemainePage } = require('./fabrication');
 const { handleCambriolage, handleCambriolageSemaine } = require('./cambriolage');
+const { handleMunitions, handleMunitionsAutocomplete, handleMunitionsReset, initMunitionsChannel } = require('./munitions');
 const { handleMention } = require('./mentions');
 const { initData } = require('./data');
 
@@ -51,6 +52,8 @@ const commandHandlers = {
     'pochon-delete': handleFabriqueDelete,
     cambriolage: handleCambriolage,
     'cambriolage-semaine': handleCambriolageSemaine,
+    munitions: (i) => handleMunitions(i, client),
+    'munitions-reset': (i) => handleMunitionsReset(i, client),
     say: handleSay,
 };
 
@@ -61,6 +64,7 @@ client.once('ready', async () => {
     await registerCommands(client.user.id);
     setupCronJobs(client);
     await initBraquagesChannel(client);
+    await initMunitionsChannel(client);
     preloadCache();
 });
 
@@ -69,8 +73,8 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.isAutocomplete()) {
             if (interaction.commandName === 'argent') {
                 await handleArgentAutocomplete(interaction);
-            } else if (interaction.commandName === 'pochon') {
-                await handleFabriqueAutocomplete(interaction);
+            } else if (interaction.commandName === 'munitions' || interaction.commandName === 'munitions-reset') {
+                await handleMunitionsAutocomplete(interaction);
             }
             return;
         }
@@ -89,10 +93,6 @@ client.on('interactionCreate', async (interaction) => {
                 await handleArgentSemainePage(interaction);
             } else if (interaction.customId.startsWith('argent_topsemaine_page_')) {
                 await handleArgentTopSemainePage(interaction);
-            } else if (interaction.customId.startsWith('fab_top_page_')) {
-                await handleFabriqueTopPage(interaction);
-            } else if (interaction.customId.startsWith('fab_semaine_page_')) {
-                await handleFabriqueSemainePage(interaction);
             } else {
                 await handleButton(interaction);
             }

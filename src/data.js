@@ -7,10 +7,12 @@ const ARGENT_FILE = path.join(__dirname, '..', 'argent.json');
 const BRAQUAGES_FILE = path.join(__dirname, '..', 'braquages.json');
 const FABRICATION_FILE = path.join(__dirname, '..', 'fabrication.json');
 const CAMBRIOLAGE_FILE = path.join(__dirname, '..', 'cambriolage.json');
+const MUNITIONS_FILE = path.join(__dirname, '..', 'munitions.json');
 
 const DEFAULT_PRESENCE = { presents: [], absents: [], lates: [], noResponses: [], messageId: null };
 const DEFAULT_USER_HISTORY = { present: 0, absent: 0, late: 0, noResponse: 0 };
 const DEFAULT_SLOT = { date: null, heure: null, membre: null };
+const DEFAULT_MUNITIONS = { coffres: {}, messageId: null };
 const DEFAULT_BRAQUAGES = {
     sup1: { ...DEFAULT_SLOT },
     sup2: { ...DEFAULT_SLOT },
@@ -42,6 +44,7 @@ function initData() {
         { path: BRAQUAGES_FILE, defaultValue: DEFAULT_BRAQUAGES },
         { path: FABRICATION_FILE, defaultValue: {} },
         { path: CAMBRIOLAGE_FILE, defaultValue: {} },
+        { path: MUNITIONS_FILE, defaultValue: DEFAULT_MUNITIONS },
     ];
     for (const { path: filePath, defaultValue } of files) {
         if (!fs.existsSync(filePath)) {
@@ -65,6 +68,9 @@ module.exports = {
     saveFabrication: (data) => saveJSON(FABRICATION_FILE, data),
     loadCambriolage: () => loadJSON(CAMBRIOLAGE_FILE, {}),
     saveCambriolage: (data) => saveJSON(CAMBRIOLAGE_FILE, data),
+    loadMunitions: () => loadJSON(MUNITIONS_FILE, DEFAULT_MUNITIONS),
+    saveMunitions: (data) => saveJSON(MUNITIONS_FILE, data),
     DEFAULT_USER_HISTORY,
     DEFAULT_BRAQUAGES,
+    DEFAULT_MUNITIONS,
 };

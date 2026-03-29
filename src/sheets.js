@@ -8,9 +8,12 @@ const cache = {
   names: { data: null, timestamp: 0 },
   groupes: { data: null, timestamp: 0 },
   emplacements: { data: null, timestamp: 0 },
+  coffres: { data: null, timestamp: 0 },
+  ammunitions: { data: null, timestamp: 0 },
   sheetId: null,
   fabricationSheetId: null,
   cambriolageSheetId: null,
+  munitionsSheetId: null,
 };
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -204,6 +207,133 @@ async function addArgentRow(
   console.log("[Sheets] Écriture réussie");
 }
 
+async function getCoffres() {
+  if (isCacheValid(cache.coffres)) return cache.coffres.data;
+
+  try {
+    const sheets = getSheets();
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: config.googleSheetsId,
+      range: "Registre!M:M",
+    });
+
+    const rows = res.data.values || [];
+    console.log("[Sheets] Coffres brut M:M:", JSON.stringify(rows.slice(0, 5)));
+    const coffres = rows
+      .flat()
+      .filter((v) => v && v.trim())
+      .map((v) => v.trim());
+
+    console.log("[Sheets] Coffres filtrés:", coffres);
+    cache.coffres = { data: [...new Set(coffres)], timestamp: Date.now() };
+    return cache.coffres.data;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des coffres:", error.message);
+    return cache.coffres.data || [];
+  }
+}
+
+async function getAmmunitions() {
+  if (isCacheValid(cache.ammunitions)) return cache.ammunitions.data;
+
+  try {
+    const sheets = getSheets();
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: config.googleSheetsId,
+      range: "Registre!O:O",
+    });
+
+    const rows = res.data.values || [];
+    console.log("[Sheets] Ammunitions brut O:O:", JSON.stringify(rows.slice(0, 5)));
+    const ammunitions = rows
+      .flat()
+      .filter((v) => v && v.trim())
+      .map((v) => v.trim());
+
+    console.log("[Sheets] Ammunitions filtrées:", ammunitions);
+    cache.ammunitions = {
+      data: [...new Set(ammunitions)],
+      timestamp: Date.now(),
+    };
+    return cache.ammunitions.data;
+  } catch (error) {
+    console.error(
+      "Erreur lors de la récupération des ammunitions:",
+      error.message,
+    );
+    return cache.ammunitions.data || [];
+  }
+}
+
+async function getMunitionsSheetId() {
+  if (cache.munitionsSheetId !== null) return cache.munitionsSheetId;
+
+  const sheets = getSheets();
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: config.googleSheetsId,
+    fields: "sheets(properties(sheetId,title))",
+  });
+  const munSheet = meta.data.sheets.find(
+    (s) => s.properties.title === "Munitions",
+  );
+  cache.munitionsSheetId = munSheet.properties.sheetId;
+  return cache.munitionsSheetId;
+}
+
+async function addMunitionsRow(
+  displayName,
+  coffre,
+  ammunition,
+  montant,
+  groupe = "Lost",
+  info = "",
+) {
+  const sheets = getSheets();
+  const memberName = await getMemberName(displayName);
+  const now = new Date();
+  const date = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+
+  const ajout = montant > 0 ? montant : "";
+  const retrait = montant < 0 ? Math.abs(montant) : "";
+
+  const row = [date, memberName, coffre || "", ammunition || "", groupe, ajout, retrait, info];
+  console.log("[Sheets] Ajout ligne Munitions:", row);
+
+  const sheetId = await getMunitionsSheetId();
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: config.googleSheetsId,
+    requestBody: {
+      requests: [
+        {
+          appendDimension: {
+            sheetId,
+            dimension: "ROWS",
+            length: 1,
+          },
+        },
+      ],
+    },
+  });
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: config.googleSheetsId,
+    range: "Munitions!B:B",
+  });
+  const nextRow = (res.data.values ? res.data.values.length : 0) + 1;
+  console.log(`[Sheets] Écriture ligne Munitions ${nextRow}`);
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: config.googleSheetsId,
+    range: `Munitions!A${nextRow}:H${nextRow}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [row],
+    },
+  });
+  console.log("[Sheets] Écriture Munitions réussie");
+}
+
 async function getFabricationSheetId() {
   if (cache.fabricationSheetId !== null) return cache.fabricationSheetId;
 
@@ -347,6 +477,8 @@ async function preloadCache() {
     getNames(),
     getGroupes(),
     getEmplacements(),
+    getCoffres(),
+    getAmmunitions(),
     getRevenuSheetId(),
   ]);
   console.log("[Sheets] Cache prêt");
@@ -356,8 +488,11 @@ module.exports = {
   getRaisons,
   getGroupes,
   getEmplacements,
+  getCoffres,
+  getAmmunitions,
   addArgentRow,
   addFabriqueRow,
   addCambriolageRow,
+  addMunitionsRow,
   preloadCache,
 };
