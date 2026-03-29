@@ -114,7 +114,7 @@ async function handleCambriolageSemaine(interaction) {
     const targetUser = interaction.options.getUser('membre') || interaction.user;
     const { start, end } = getWeekBounds(new Date());
 
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     // Résoudre le nom du membre via le Registre Google Sheets
     const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
