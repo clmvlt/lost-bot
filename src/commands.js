@@ -175,6 +175,65 @@ const commands = [
         .setName('pochon-delete')
         .setDescription('Supprimer la dernière session de pochon'),
     new SlashCommandBuilder()
+        .setName('cambriolage')
+        .setDescription('Enregistrer un cambriolage')
+        .addStringOption(option =>
+            option.setName('with')
+                .setDescription('Membres avec toi (@mentions)')
+                .setRequired(false))
+        .addIntegerOption(option =>
+            option.setName('ordinateur')
+                .setDescription('Nombre d\'ordinateurs')
+                .setRequired(false)
+                .setMinValue(0))
+        .addIntegerOption(option =>
+            option.setName('tableau')
+                .setDescription('Nombre de tableaux')
+                .setRequired(false)
+                .setMinValue(0))
+        .addIntegerOption(option =>
+            option.setName('sculpture')
+                .setDescription('Nombre de sculptures')
+                .setRequired(false)
+                .setMinValue(0))
+        .addIntegerOption(option =>
+            option.setName('television')
+                .setDescription('Nombre de télévisions')
+                .setRequired(false)
+                .setMinValue(0))
+        .addIntegerOption(option =>
+            option.setName('tablette')
+                .setDescription('Nombre de tablettes')
+                .setRequired(false)
+                .setMinValue(0))
+        .addIntegerOption(option =>
+            option.setName('console')
+                .setDescription('Nombre de consoles')
+                .setRequired(false)
+                .setMinValue(0))
+        .addIntegerOption(option =>
+            option.setName('micro-ondes')
+                .setDescription('Nombre de micro-ondes')
+                .setRequired(false)
+                .setMinValue(0))
+        .addIntegerOption(option =>
+            option.setName('appareil-photo')
+                .setDescription('Nombre d\'appareils photo')
+                .setRequired(false)
+                .setMinValue(0))
+        .addIntegerOption(option =>
+            option.setName('enceinte')
+                .setDescription('Nombre d\'enceintes')
+                .setRequired(false)
+                .setMinValue(0)),
+    new SlashCommandBuilder()
+        .setName('cambriolage-semaine')
+        .setDescription('Récap des cambriolages de la semaine')
+        .addUserOption(option =>
+            option.setName('membre')
+                .setDescription('Membre à afficher (optionnel, toi-même si vide)')
+                .setRequired(false)),
+    new SlashCommandBuilder()
         .setName('say')
         .setDescription('Envoyer un message via le bot (dans le salon ou en MP)')
         .addStringOption(option =>

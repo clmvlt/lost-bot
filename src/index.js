@@ -11,6 +11,7 @@ const { preloadCache } = require('./sheets');
 const { handleSetMeAdmin, handleUnsetMeAdmin, handleSay } = require('./admin');
 const { handleSup, handleAmmu, handleBraquagesReset, handleBraquagesClear, initBraquagesChannel } = require('./braquages');
 const { handleFabrique, handleFabriqueAutocomplete, handleFabriqueSemaine, handleFabriqueTop, handleFabriqueDelete, handleFabriqueTopPage, handleFabriqueSemainePage } = require('./fabrication');
+const { handleCambriolage, handleCambriolageSemaine } = require('./cambriolage');
 const { handleMention } = require('./mentions');
 const { initData } = require('./data');
 
@@ -48,6 +49,8 @@ const commandHandlers = {
     'pochon-semaine': handleFabriqueSemaine,
     'pochon-top': handleFabriqueTop,
     'pochon-delete': handleFabriqueDelete,
+    cambriolage: handleCambriolage,
+    'cambriolage-semaine': handleCambriolageSemaine,
     say: handleSay,
 };
 

@@ -10,6 +10,7 @@ const cache = {
   emplacements: { data: null, timestamp: 0 },
   sheetId: null,
   fabricationSheetId: null,
+  cambriolageSheetId: null,
 };
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -272,6 +273,73 @@ async function addFabriqueRow(
   console.log("[Sheets] Écriture Fabrication réussie");
 }
 
+async function getCambriolageSheetId() {
+  if (cache.cambriolageSheetId !== null) return cache.cambriolageSheetId;
+
+  const sheets = getSheets();
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: config.googleSheetsId,
+    fields: "sheets(properties(sheetId,title))",
+  });
+  const sheet = meta.data.sheets.find(
+    (s) => s.properties.title === "Cambriolage",
+  );
+  cache.cambriolageSheetId = sheet.properties.sheetId;
+  return cache.cambriolageSheetId;
+}
+
+async function addCambriolageRow(displayNames, quantities) {
+  const sheets = getSheets();
+  const names = Array.isArray(displayNames) ? displayNames : [displayNames];
+  const resolvedNames = await Promise.all(names.map((n) => getMemberName(n)));
+  const memberName = resolvedNames.join(", ");
+  const now = new Date();
+  const date = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+
+  const objetKeys = [
+    "ordinateur", "tableau", "sculpture", "television",
+    "tablette", "console", "micro-ondes", "appareil-photo", "enceinte",
+  ];
+  const row = [date, memberName, ...objetKeys.map((k) => quantities[k] || "")];
+  console.log("[Sheets] Ajout ligne Cambriolage:", row);
+
+  const sheetId = await getCambriolageSheetId();
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: config.googleSheetsId,
+    requestBody: {
+      requests: [
+        {
+          appendDimension: {
+            sheetId,
+            dimension: "ROWS",
+            length: 1,
+          },
+        },
+      ],
+    },
+  });
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: config.googleSheetsId,
+    range: "Cambriolage!B:B",
+  });
+  const nextRow = (res.data.values ? res.data.values.length : 0) + 1;
+  // S'assurer qu'on écrit au moins à la ligne 6 (première ligne de données)
+  const writeRow = Math.max(nextRow, 6);
+  console.log(`[Sheets] Écriture ligne Cambriolage ${writeRow}`);
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: config.googleSheetsId,
+    range: `Cambriolage!A${writeRow}:K${writeRow}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [row],
+    },
+  });
+  console.log("[Sheets] Écriture Cambriolage réussie");
+}
+
 async function preloadCache() {
   console.log("[Sheets] Préchargement du cache...");
   await Promise.all([
@@ -290,5 +358,6 @@ module.exports = {
   getEmplacements,
   addArgentRow,
   addFabriqueRow,
+  addCambriolageRow,
   preloadCache,
 };
