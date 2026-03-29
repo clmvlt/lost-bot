@@ -1,8 +1,8 @@
 const { EmbedBuilder, MessageFlags } = require('discord.js');
 const config = require('./config');
 const { loadCambriolage, saveCambriolage } = require('./data');
-const { getWeekBounds, formatDateFR, hasLostRole } = require('./utils');
-const { addCambriolageRow } = require('./sheets');
+const { getWeekBounds, parseDateFR, formatDateFR, hasLostRole } = require('./utils');
+const { addCambriolageRow, getCambriolageRows, getMemberName } = require('./sheets');
 
 const OBJETS = [
     { key: 'ordinateur', label: 'Ordinateur' },
@@ -114,31 +114,44 @@ async function handleCambriolageSemaine(interaction) {
     const targetUser = interaction.options.getUser('membre') || interaction.user;
     const { start, end } = getWeekBounds(new Date());
 
-    const cambrioData = loadCambriolage();
-    const entries = cambrioData[targetUser.id] || [];
+    await interaction.deferReply();
 
-    const weekEntries = entries.filter(e => {
-        const d = new Date(e.date);
-        return d >= start && d <= end;
+    // Résoudre le nom du membre via le Registre Google Sheets
+    const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
+    const displayName = member?.displayName || targetUser.username;
+    const memberName = await getMemberName(displayName);
+
+    // Lire les données depuis Google Sheets
+    const OBJET_KEYS = OBJETS.map(o => o.key);
+    const rows = await getCambriolageRows();
+
+    const weekEntries = rows.filter(row => {
+        if (!row[0] || !row[1]) return false;
+        const rowDate = parseDateFR(row[0]);
+        if (!rowDate) return false;
+        if (rowDate < start || rowDate > end) return false;
+        // Vérifier si le membre est dans la liste des participants (colonne B peut contenir plusieurs noms séparés par virgule)
+        const participants = row[1].split(',').map(n => n.trim().toLowerCase());
+        return participants.includes(memberName.toLowerCase());
     });
 
     const startStr = formatDateFR(start);
     const endStr = formatDateFR(end);
 
     if (weekEntries.length === 0) {
-        await interaction.reply({
+        await interaction.editReply({
             content: `Aucun cambriolage pour ${targetUser} cette semaine (${startStr} - ${endStr}).`,
-            flags: MessageFlags.Ephemeral,
         });
         return;
     }
 
-    // Totaliser chaque objet sur la semaine
+    // Totaliser chaque objet sur la semaine (colonnes C à K = index 2 à 10)
     const totals = {};
     for (const { key } of OBJETS) totals[key] = 0;
-    for (const entry of weekEntries) {
-        for (const { key } of OBJETS) {
-            totals[key] += (entry.quantities[key] || 0);
+    for (const row of weekEntries) {
+        for (let i = 0; i < OBJET_KEYS.length; i++) {
+            const val = parseInt(row[i + 2], 10);
+            if (!isNaN(val)) totals[OBJET_KEYS[i]] += val;
         }
     }
 
@@ -161,7 +174,7 @@ async function handleCambriolageSemaine(interaction) {
         .setThumbnail(targetUser.displayAvatarURL())
         .setTimestamp();
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
 }
 
 module.exports = { handleCambriolage, handleCambriolageSemaine };

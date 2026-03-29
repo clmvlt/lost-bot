@@ -469,6 +469,15 @@ async function addCambriolageRow(displayNames, quantities) {
   console.log("[Sheets] Écriture Cambriolage réussie");
 }
 
+async function getCambriolageRows() {
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: config.googleSheetsId,
+    range: "Cambriolage!A6:K",
+  });
+  return res.data.values || [];
+}
+
 async function preloadCache() {
   console.log("[Sheets] Préchargement du cache...");
   await Promise.all([
@@ -492,6 +501,8 @@ module.exports = {
   addArgentRow,
   addFabriqueRow,
   addCambriolageRow,
+  getCambriolageRows,
+  getMemberName,
   addMunitionsRow,
   preloadCache,
 };
